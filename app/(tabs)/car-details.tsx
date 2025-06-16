@@ -8,7 +8,6 @@ import {
   SafeAreaView, 
   Image, 
   Modal, 
-  FlatList,
   Animated,
   Dimensions,
   TextInput,
@@ -374,30 +373,25 @@ export default function CarDetailsScreen() {
               </View>
             </View>
             
-            <FlatList
-              data={reviews}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewerInfo}>
-                      <View style={styles.reviewerAvatar}>
-                        <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
-                      </View>
-                      <View>
-                        <Text style={styles.reviewerName}>{item.name}</Text>
-                        <Text style={styles.reviewDate}>{item.date}</Text>
-                      </View>
+            {reviews.map((item) => (
+              <View key={item.id} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewerInfo}>
+                    <View style={styles.reviewerAvatar}>
+                      <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
                     </View>
-                    <View style={styles.reviewRating}>
-                      {renderStars(item.rating)}
+                    <View>
+                      <Text style={styles.reviewerName}>{item.name}</Text>
+                      <Text style={styles.reviewDate}>{item.date}</Text>
                     </View>
                   </View>
-                  <Text style={styles.reviewComment}>{item.comment}</Text>
+                  <View style={styles.reviewRating}>
+                    {renderStars(item.rating)}
+                  </View>
                 </View>
-              )}
-              showsVerticalScrollIndicator={false}
-            />
+                <Text style={styles.reviewComment}>{item.comment}</Text>
+              </View>
+            ))}
           </View>
         );
 
@@ -468,71 +462,72 @@ export default function CarDetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Trip Details - Editable */}
-      <View style={styles.tripDetails}>
-        <View style={styles.tripHeader}>
-          <View>
-            <Text style={styles.carTitle}>Lamborghini 2020</Text>
-            <Text style={styles.carLocation}>{location}</Text>
-          </View>
-          <TouchableOpacity style={styles.shareButton}>
-            <Share2 size={20} color="#059669" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.dateTimeSection}>
-          <TouchableOpacity 
-            style={styles.dateTimeItem}
-            onPress={() => handleDateTimeEdit('start')}
-          >
-            <Text style={styles.dateTimeLabel}>{formatDateTime(tripStart, 'date')}</Text>
-            <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
-            <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.dateTimeItem}
-            onPress={() => handleDateTimeEdit('end')}
-          >
-            <Text style={styles.dateTimeLabel}>{formatDateTime(tripEnd, 'date')}</Text>
-            <Text style={styles.dateTimeValue}>{formatDateTime(tripEnd, 'time')}</Text>
-            <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Car Info */}
-      <View style={styles.carInfo}>
-        <View style={styles.carHeader}>
-          <Text style={styles.carName}>Lamborghini 2020</Text>
-          <View style={styles.ratingContainer}>
-            {renderStars(5)}
-            <Text style={styles.reviewCount}>10 Reviews</Text>
-          </View>
-        </View>
-        <Text style={styles.carFeatures}>Automatic • Petrol • 2 Seats</Text>
-        <Text style={styles.carUrl}>https://maps.google.com/25716420/details/712681</Text>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.activeTab]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
       {/* Scrollable Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Trip Details - Editable */}
+        <View style={styles.tripDetails}>
+          <View style={styles.tripHeader}>
+            <View>
+              <Text style={styles.carTitle}>Lamborghini 2020</Text>
+              <Text style={styles.carLocation}>{location}</Text>
+            </View>
+            <TouchableOpacity style={styles.shareButton}>
+              <Share2 size={20} color="#059669" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.dateTimeSection}>
+            <TouchableOpacity 
+              style={styles.dateTimeItem}
+              onPress={() => handleDateTimeEdit('start')}
+            >
+              <Text style={styles.dateTimeLabel}>{formatDateTime(tripStart, 'date')}</Text>
+              <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
+              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.dateTimeItem}
+              onPress={() => handleDateTimeEdit('end')}
+            >
+              <Text style={styles.dateTimeLabel}>{formatDateTime(tripEnd, 'date')}</Text>
+              <Text style={styles.dateTimeValue}>{formatDateTime(tripEnd, 'time')}</Text>
+              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Car Info */}
+        <View style={styles.carInfo}>
+          <View style={styles.carHeader}>
+            <Text style={styles.carName}>Lamborghini 2020</Text>
+            <View style={styles.ratingContainer}>
+              {renderStars(5)}
+              <Text style={styles.reviewCount}>10 Reviews</Text>
+            </View>
+          </View>
+          <Text style={styles.carFeatures}>Automatic • Petrol • 2 Seats</Text>
+          <Text style={styles.carUrl}>https://maps.google.com/25716420/details/712681</Text>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, activeTab === tab && styles.activeTab]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tab Content */}
         {renderTabContent()}
 
         {/* FAQs Section */}
@@ -811,6 +806,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  content: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   tripDetails: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
@@ -944,10 +943,6 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: '#FFFFFF',
-  },
-  content: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   photosContainer: {
     padding: 20,
