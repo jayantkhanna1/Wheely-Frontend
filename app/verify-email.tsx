@@ -6,7 +6,7 @@ import Toast from '@/components/Toast';
 
 export default function VerifyEmailScreen() {
   const { email, customerId } = useLocalSearchParams();
-  const [otp, setOtp] = useState(['', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'error' as 'success' | 'error' });
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -27,7 +27,7 @@ export default function VerifyEmailScreen() {
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value && index < 4) {
+    if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -41,39 +41,75 @@ export default function VerifyEmailScreen() {
   const handleVerifyEmail = async () => {
     const otpString = otp.join('');
     
-    if (otpString.length !== 5) {
-      showToast('Please enter the complete 5-digit code', 'error');
+    if (otpString.length !== 6) {
+      showToast('Please enter the complete 6-digit code', 'error');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/verifyEmail/`, {
+      const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/verifyEmail/`;
+      console.log('Making verification request to:', apiUrl);
+      
+      const requestData = {
+        email: email,
+        otp: parseInt(otpString),
+      };
+      
+      console.log('Verification request data:', requestData);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          email: email,
-          otp: parseInt(otpString),
-        }),
+        body: JSON.stringify(requestData),
       });
 
+      console.log('Verification response status:', response.status);
       const data = await response.json();
+      console.log('Verification response data:', data);
 
-      if (response.ok && data.message === "Email verified successfully") {
+      if (response.ok && (data.message === "Email verified successfully" || data.success === true)) {
         showToast('Email verified successfully!', 'success');
         setTimeout(() => {
           router.replace('/(tabs)');
         }, 1500);
       } else {
-        showToast('Invalid OTP. Please try again.', 'error');
+        if (response.status === 400) {
+          showToast('Invalid OTP format. Please check your code.', 'error');
+        } else if (response.status === 404) {
+          showToast('OTP expired or not found. Please request a new code.', 'error');
+        } else {
+          showToast(data.message || 'Invalid OTP. Please try again.', 'error');
+        }
       }
     } catch (error) {
-      showToast('Network error. Please try again.', 'error');
+      console.error('Verification error:', error);
+      
+      if (error instanceof TypeError && error.message === 'Network request failed') {
+        showToast('Cannot connect to server. Please check your internet connection.', 'error');
+      } else {
+        showToast('Network error. Please try again.', 'error');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      showToast('Resending verification code...', 'success');
+      // Add resend OTP API call here if available
+      // const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/resendOTP/`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email }),
+      // });
+    } catch (error) {
+      showToast('Failed to resend code. Please try again.', 'error');
     }
   };
 
@@ -97,13 +133,13 @@ export default function VerifyEmailScreen() {
       <View style={styles.content}>
         <View style={styles.messageContainer}>
           <Text style={styles.message}>
-            We just sent 5-digit code to{'\n'}
-            <Text style={styles.email}>{email}</Text> enter it bellow:
+            We just sent a 6-digit code to{'\n'}
+            <Text style={styles.email}>{email}</Text> enter it below:
           </Text>
         </View>
 
         <View style={styles.otpContainer}>
-          <Text style={styles.codeLabel}>Code</Text>
+          <Text style={styles.codeLabel}>Verification Code</Text>
           <View style={styles.otpInputContainer}>
             {otp.map((digit, index) => (
               <TextInput
@@ -116,6 +152,8 @@ export default function VerifyEmailScreen() {
                 keyboardType="numeric"
                 maxLength={1}
                 textAlign="center"
+                autoFocus={index === 0}
+                selectTextOnFocus
               />
             ))}
           </View>
@@ -127,13 +165,19 @@ export default function VerifyEmailScreen() {
           disabled={loading}
         >
           <Text style={styles.verifyButtonText}>
-            {loading ? 'Verifying...' : 'Verify email'}
+            {loading ? 'Verifying...' : 'Verify Email'}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.resendContainer}>
+        <TouchableOpacity style={styles.resendContainer} onPress={handleResendOTP}>
           <Text style={styles.resendText}>
-            Wrong email? <Text style={styles.resendLink}>Send to different email</Text>
+            Didn't receive the code? <Text style={styles.resendLink}>Resend Code</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.changeEmailContainer}>
+          <Text style={styles.changeEmailText}>
+            Wrong email? <Text style={styles.changeEmailLink}>Send to different email</Text>
           </Text>
         </TouchableOpacity>
 
@@ -216,21 +260,32 @@ const styles = StyleSheet.create({
   otpInputContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
   otpInput: {
     flex: 1,
     height: 60,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
     borderRadius: 12,
     fontSize: 24,
     fontWeight: '600',
     color: '#374151',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   otpInputFilled: {
     borderColor: '#059669',
     backgroundColor: '#F0FDF4',
+    shadowColor: '#059669',
+    shadowOpacity: 0.1,
   },
   verifyButton: {
     backgroundColor: '#059669',
@@ -238,9 +293,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 24,
+    shadowColor: '#059669',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   verifyButtonDisabled: {
     backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   verifyButtonText: {
     fontSize: 18,
@@ -249,13 +314,27 @@ const styles = StyleSheet.create({
   },
   resendContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 16,
+    paddingVertical: 8,
   },
   resendText: {
     fontSize: 16,
     color: '#6B7280',
   },
   resendLink: {
+    color: '#059669',
+    fontWeight: '600',
+  },
+  changeEmailContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+    paddingVertical: 8,
+  },
+  changeEmailText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  changeEmailLink: {
     color: '#059669',
     fontWeight: '600',
   },
