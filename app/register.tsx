@@ -53,11 +53,20 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      console.log(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/register/`);
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/register/`, {
+      const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/register/`;
+      console.log('Making request to:', apiUrl);
+      console.log('Request data:', {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        date_of_birth: formData.dateOfBirth,
+      });
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           first_name: formData.firstName,
@@ -68,19 +77,32 @@ export default function RegisterScreen() {
         }),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok && data.message === "Customer registered successfully. OTP sent to email.") {
-        router.push({
-          pathname: '/verify-email',
-          params: { email: formData.email, customerId: data.customer_id }
-        });
+        showToast('Registration successful! Please check your email for OTP.', 'success');
+        setTimeout(() => {
+          router.push({
+            pathname: '/verify-email',
+            params: { email: formData.email, customerId: data.customer_id }
+          });
+        }, 1500);
       } else {
         showToast(data.message || 'Registration failed', 'error');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      showToast('Network error. Please try again.', 'error');
+      
+      // More specific error handling
+      if (error instanceof TypeError && error.message === 'Network request failed') {
+        showToast('Cannot connect to server. Please check your internet connection and try again.', 'error');
+      } else {
+        showToast('Network error. Please try again.', 'error');
+      }
     } finally {
       setLoading(false);
     }
