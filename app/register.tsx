@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import Toast from '@/components/Toast';
+import DatePicker from '@/components/DatePicker';
 
 interface PasswordRequirement {
   text: string;
@@ -15,7 +16,7 @@ export default function RegisterScreen() {
     lastName: '',
     email: '',
     password: '',
-    dateOfBirth: '',
+    dateOfBirth: null as Date | null,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,13 @@ export default function RegisterScreen() {
     setToast({ ...toast, visible: false });
   };
 
+  const formatDateForAPI = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleContinue = async () => {
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.dateOfBirth) {
       showToast('Please fill in all fields', 'error');
@@ -55,12 +63,16 @@ export default function RegisterScreen() {
     try {
       const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/register/`;
       console.log('Making request to:', apiUrl);
-      console.log('Request data:', {
+      
+      const requestData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
-        date_of_birth: formData.dateOfBirth,
-      });
+        password: formData.password,
+        date_of_birth: formatDateForAPI(formData.dateOfBirth),
+      };
+      
+      console.log('Request data:', requestData);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -68,27 +80,24 @@ export default function RegisterScreen() {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          date_of_birth: formData.dateOfBirth,
-        }),
+        body: JSON.stringify(requestData),
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       const data = await response.json();
       console.log('Response data:', data);
 
       if (response.ok && data.message === "Customer registered successfully. OTP sent to email.") {
-        showToast('Registration successful! Please check your email for OTP.', 'success');
+        showToast('Registration successful! Redirecting to verification...', 'success');
+        
+        // Use replace instead of push to ensure proper navigation
         setTimeout(() => {
-          router.push({
+          router.replace({
             pathname: '/verify-email',
-            params: { email: formData.email, customerId: data.customer_id }
+            params: { 
+              email: formData.email, 
+              customerId: String(data.customer_id) 
+            }
           });
         }, 1500);
       } else {
@@ -97,7 +106,6 @@ export default function RegisterScreen() {
     } catch (error) {
       console.error('Registration error:', error);
       
-      // More specific error handling
       if (error instanceof TypeError && error.message === 'Network request failed') {
         showToast('Cannot connect to server. Please check your internet connection and try again.', 'error');
       } else {
@@ -109,7 +117,10 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Toast {...toast} onHide={hideToast} />
       
       <View style={styles.header}>
@@ -125,7 +136,12 @@ export default function RegisterScreen() {
         <View style={[styles.progressDot, styles.progressActive]} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>First Name</Text>
@@ -135,6 +151,7 @@ export default function RegisterScreen() {
               onChangeText={(text) => setFormData({ ...formData, firstName: text })}
               placeholder="Enter your first name"
               placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
             />
           </View>
 
@@ -146,6 +163,7 @@ export default function RegisterScreen() {
               onChangeText={(text) => setFormData({ ...formData, lastName: text })}
               placeholder="Enter your last name"
               placeholderTextColor="#9CA3AF"
+              autoCapitalize="words"
             />
           </View>
 
@@ -159,17 +177,16 @@ export default function RegisterScreen() {
               placeholderTextColor="#9CA3AF"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Date of Birth</Text>
-            <TextInput
-              style={styles.input}
+            <DatePicker
+              label="Date of Birth"
               value={formData.dateOfBirth}
-              onChangeText={(text) => setFormData({ ...formData, dateOfBirth: text })}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#9CA3AF"
+              onChange={(date) => setFormData({ ...formData, dateOfBirth: date })}
+              placeholder="Select your date of birth"
             />
           </View>
 
@@ -183,6 +200,8 @@ export default function RegisterScreen() {
                 placeholder="Enter password"
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -206,6 +225,18 @@ export default function RegisterScreen() {
                 </Text>
               </View>
             ))}
+            <View style={styles.requirement}>
+              <View style={[styles.requirementDot, hasUppercase && styles.requirementMet]} />
+              <Text style={[styles.requirementText, hasUppercase && styles.requirementTextMet]}>
+                an uppercase letter
+              </Text>
+            </View>
+            <View style={styles.requirement}>
+              <View style={[styles.requirementDot, hasLowercase && styles.requirementMet]} />
+              <Text style={[styles.requirementText, hasLowercase && styles.requirementTextMet]}>
+                a lowercase letter
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -226,7 +257,7 @@ export default function RegisterScreen() {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -255,7 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 20,
     gap: 8,
   },
   progressDot: {
@@ -267,9 +298,12 @@ const styles = StyleSheet.create({
   progressActive: {
     backgroundColor: '#059669',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   form: {
     gap: 20,
@@ -290,6 +324,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     color: '#374151',
+    backgroundColor: '#FFFFFF',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -297,6 +332,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
+    backgroundColor: '#FFFFFF',
   },
   passwordInput: {
     flex: 1,
