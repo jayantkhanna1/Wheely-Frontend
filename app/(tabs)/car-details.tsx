@@ -56,6 +56,7 @@ export default function CarDetailsScreen() {
   const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('Photos');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAgreed, setIsAgreed] = useState(false); // Changed to false (unticked by default)
   const [faqs, setFaqs] = useState<FAQ[]>([
     {
       id: '1',
@@ -367,8 +368,11 @@ export default function CarDetailsScreen() {
               <Text style={styles.ratingTitle}>Reviews & Rating</Text>
               <View style={styles.ratingHeader}>
                 <Text style={styles.ratingScore}>5.0</Text>
-                <View style={styles.ratingStars}>
-                  {renderStars(5)}
+                <View style={styles.ratingStarsContainer}>
+                  <View style={styles.ratingStars}>
+                    {renderStars(5)}
+                  </View>
+                  <Text style={styles.reviewCount}>10 Reviews</Text>
                 </View>
               </View>
             </View>
@@ -557,14 +561,17 @@ export default function CarDetailsScreen() {
         {/* Policies Section */}
         <View style={styles.policiesContainer}>
           <Text style={styles.policiesTitle}>Policies and Agreement</Text>
-          <View style={styles.policyItem}>
-            <View style={styles.checkbox}>
-              <Text style={styles.checkmark}>✓</Text>
+          <TouchableOpacity 
+            style={styles.policyItem}
+            onPress={() => setIsAgreed(!isAgreed)}
+          >
+            <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
+              {isAgreed && <Text style={styles.checkmark}>✓</Text>}
             </View>
             <Text style={styles.policyText}>
               I hereby agree to the terms and conditions of the Lease Agreement with Host.
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Bottom Spacing for Fixed Price Bar */}
@@ -1044,9 +1051,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#059669',
   },
+  ratingStarsContainer: {
+    alignItems: 'flex-start',
+  },
   ratingStars: {
     flexDirection: 'row',
     gap: 2,
+    marginBottom: 2,
   },
   reviewCard: {
     backgroundColor: '#F9FAFB',
@@ -1243,10 +1254,16 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 4,
-    backgroundColor: '#059669',
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
   checkmark: {
     color: '#FFFFFF',

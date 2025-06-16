@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Car, Bike, Recycle as Bicycle } from 'lucide-react-native';
+import { Car, Bike, Recycle as Bicycle } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -24,10 +24,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
-          ),
+          href: null, // Hide from tab bar completely
         }}
       />
       <Tabs.Screen
