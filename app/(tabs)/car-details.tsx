@@ -322,6 +322,19 @@ export default function CarDetailsScreen() {
     ));
   };
 
+  const handleBookNow = () => {
+    router.push({
+      pathname: '/payment',
+      params: {
+        vehicleType: 'car',
+        vehicleName: 'Lamborghini 2020',
+        price: '20010',
+        duration: '12 hours',
+        pickupLocation: '8XM9+MwC, Special Wing, Prem Nagar...'
+      }
+    });
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Photos':
@@ -589,7 +602,7 @@ export default function CarDetailsScreen() {
             <Text style={styles.priceFeature}>• Headlights</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.bookButton}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>

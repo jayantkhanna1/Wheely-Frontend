@@ -322,6 +322,19 @@ export default function BikeDetailsScreen() {
     ));
   };
 
+  const handleBookNow = () => {
+    router.push({
+      pathname: '/payment',
+      params: {
+        vehicleType: 'bike',
+        vehicleName: 'Honda Activa 6G',
+        price: '540',
+        duration: '12 hours',
+        pickupLocation: '8XM9+MwC, Special Wing, Prem Nagar...'
+      }
+    });
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Photos':
@@ -589,7 +602,7 @@ export default function BikeDetailsScreen() {
             <Text style={styles.priceFeature}>• Fuel</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.bookButton}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>
@@ -1427,6 +1440,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
+  
   },
   locationEditContent: {
     padding: 20,

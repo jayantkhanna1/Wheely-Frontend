@@ -322,6 +322,19 @@ export default function CycleDetailsScreen() {
     ));
   };
 
+  const handleBookNow = () => {
+    router.push({
+      pathname: '/payment',
+      params: {
+        vehicleType: 'cycle',
+        vehicleName: 'Trek FX 3 Disc',
+        price: '300',
+        duration: '12 hours',
+        pickupLocation: '8XM9+MwC, Special Wing, Prem Nagar...'
+      }
+    });
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Photos':
@@ -589,7 +602,7 @@ export default function CycleDetailsScreen() {
             <Text style={styles.priceFeature}>• Lights</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.bookButton}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>
