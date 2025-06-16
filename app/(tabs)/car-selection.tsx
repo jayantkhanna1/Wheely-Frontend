@@ -10,7 +10,9 @@ import {
   Modal, 
   FlatList,
   Animated,
-  Dimensions
+  Dimensions,
+  TextInput,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { 
   ArrowLeft, 
@@ -25,9 +27,20 @@ import {
   Settings,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  User,
+  Map as MapIcon,
+  Phone,
+  Gift,
+  Percent,
+  CircleHelp as HelpCircle,
+  FileText,
+  Globe,
+  Edit3
 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 
 interface Car {
   id: string;
@@ -56,22 +69,34 @@ interface SortOption {
   selected: boolean;
 }
 
+interface MenuItem {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+}
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function CarSelectionScreen() {
   const [location, setLocation] = useState('Saket Colony, Delhi');
-  const [startDate, setStartDate] = useState('Jun 25');
-  const [startTime, setStartTime] = useState('09:00 AM');
-  const [endDate, setEndDate] = useState('Jun 25');
-  const [endTime, setEndTime] = useState('09:00 PM');
+  const [tripStart, setTripStart] = useState(new Date());
+  const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [showLocationEdit, setShowLocationEdit] = useState(false);
   const [showDateTimeEdit, setShowDateTimeEdit] = useState(false);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [startPickerMode, setStartPickerMode] = useState<'date' | 'time'>('date');
+  const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
   const [editingField, setEditingField] = useState<'start' | 'end' | null>(null);
+  const [tempLocation, setTempLocation] = useState(location);
+  const [showMenu, setShowMenu] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const sortSlideAnim = useRef(new Animated.Value(screenWidth)).current;
+  const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
 
   const [filters, setFilters] = useState<FilterOption[]>([
     { id: 'model2020+', label: 'Model 2020+', selected: true },
@@ -82,6 +107,10 @@ export default function CarSelectionScreen() {
     { id: 'suv', label: 'SUV', selected: false },
     { id: 'sedan', label: 'Sedan', selected: false },
     { id: 'hatchback', label: 'Hatchback', selected: false },
+    { id: 'convertible', label: 'Convertible', selected: false },
+    { id: 'electric', label: 'Electric', selected: false },
+    { id: 'hybrid', label: 'Hybrid', selected: false },
+    { id: 'manual', label: 'Manual', selected: false },
   ]);
 
   const [sortOptions, setSortOptions] = useState<SortOption[]>([
@@ -90,7 +119,60 @@ export default function CarSelectionScreen() {
     { id: 'rating', label: 'Highest Rated', selected: false },
     { id: 'distance', label: 'Nearest First', selected: true },
     { id: 'newest', label: 'Newest Models', selected: false },
+    { id: 'fuel-efficient', label: 'Most Fuel Efficient', selected: false },
+    { id: 'popular', label: 'Most Popular', selected: false },
   ]);
+
+  const menuItems: MenuItem[] = [
+    {
+      id: 'trips',
+      title: 'My Trips',
+      icon: <MapIcon size={24} color="#374151" />,
+      onPress: () => console.log('My Trips pressed')
+    },
+    {
+      id: 'contact',
+      title: 'Contact Us',
+      icon: <Phone size={24} color="#374151" />,
+      onPress: () => console.log('Contact Us pressed')
+    },
+    {
+      id: 'profile',
+      title: 'My Profile',
+      icon: <User size={24} color="#374151" />,
+      onPress: () => console.log('My Profile pressed')
+    },
+    {
+      id: 'rewards',
+      title: 'Rewards',
+      icon: <Gift size={24} color="#374151" />,
+      onPress: () => console.log('Rewards pressed')
+    },
+    {
+      id: 'offers',
+      title: 'Offers',
+      icon: <Percent size={24} color="#374151" />,
+      onPress: () => console.log('Offers pressed')
+    },
+    {
+      id: 'helpline',
+      title: 'Helpline Support',
+      icon: <HelpCircle size={24} color="#374151" />,
+      onPress: () => console.log('Helpline Support pressed')
+    },
+    {
+      id: 'policies',
+      title: 'Policies',
+      icon: <FileText size={24} color="#374151" />,
+      onPress: () => console.log('Policies pressed')
+    },
+    {
+      id: 'language',
+      title: 'Language',
+      icon: <Globe size={24} color="#374151" />,
+      onPress: () => console.log('Language pressed')
+    }
+  ];
 
   const cars: Car[] = [
     {
@@ -149,7 +231,87 @@ export default function CarSelectionScreen() {
       image: 'https://images.pexels.com/photos/3764984/pexels-photo-3764984.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
       features: ['Automatic', 'Petrol', '2 Seats', 'Luxury']
     },
+    {
+      id: '5',
+      name: 'Ferrari',
+      model: 'F8 Tributo',
+      year: '2023',
+      type: 'Sports Car',
+      fuel: 'Petrol',
+      seats: 2,
+      rating: 4.9,
+      distance: '7.2 km away',
+      price: 850,
+      image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+      features: ['Automatic', 'Petrol', '2 Seats', 'Luxury']
+    },
+    {
+      id: '6',
+      name: 'Porsche',
+      model: '911 Turbo S',
+      year: '2022',
+      type: 'Sports Car',
+      fuel: 'Petrol',
+      seats: 4,
+      rating: 4.8,
+      distance: '8.5 km away',
+      price: 780,
+      image: 'https://images.pexels.com/photos/3729464/pexels-photo-3729464.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+      features: ['Automatic', 'Petrol', '4 Seats', 'Sports']
+    },
   ];
+
+  const formatDateTime = (date: Date, type: 'date' | 'time') => {
+    if (type === 'date') {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: '2-digit'
+      });
+    } else {
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+  };
+
+  const handleDateTimeChange = (event: any, selectedDate?: Date, type: 'start' | 'end', mode: 'date' | 'time') => {
+    if (Platform.OS === 'android') {
+      setShowStartPicker(false);
+      setShowEndPicker(false);
+    }
+
+    if (selectedDate) {
+      if (type === 'start') {
+        if (mode === 'date') {
+          const newDate = new Date(tripStart);
+          newDate.setFullYear(selectedDate.getFullYear());
+          newDate.setMonth(selectedDate.getMonth());
+          newDate.setDate(selectedDate.getDate());
+          setTripStart(newDate);
+        } else {
+          const newDate = new Date(tripStart);
+          newDate.setHours(selectedDate.getHours());
+          newDate.setMinutes(selectedDate.getMinutes());
+          setTripStart(newDate);
+        }
+      } else {
+        if (mode === 'date') {
+          const newDate = new Date(tripEnd);
+          newDate.setFullYear(selectedDate.getFullYear());
+          newDate.setMonth(selectedDate.getMonth());
+          newDate.setDate(selectedDate.getDate());
+          setTripEnd(newDate);
+        } else {
+          const newDate = new Date(tripEnd);
+          newDate.setHours(selectedDate.getHours());
+          newDate.setMinutes(selectedDate.getMinutes());
+          setTripEnd(newDate);
+        }
+      }
+    }
+  };
 
   const openFilters = () => {
     setShowFilters(true);
@@ -189,6 +351,25 @@ export default function CarSelectionScreen() {
     });
   };
 
+  const openMenu = () => {
+    setShowMenu(true);
+    Animated.timing(menuSlideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeMenu = () => {
+    Animated.timing(menuSlideAnim, {
+      toValue: screenWidth,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowMenu(false);
+    });
+  };
+
   const toggleFilter = (filterId: string) => {
     setFilters(prev => prev.map(filter => 
       filter.id === filterId 
@@ -212,6 +393,32 @@ export default function CarSelectionScreen() {
   const getSelectedSortLabel = () => {
     const selected = sortOptions.find(option => option.selected);
     return selected ? selected.label : 'Sort';
+  };
+
+  const handleLocationEdit = () => {
+    setTempLocation(location);
+    setShowLocationEdit(true);
+  };
+
+  const saveLocationEdit = () => {
+    setLocation(tempLocation);
+    setShowLocationEdit(false);
+  };
+
+  const handleDateTimeEdit = (field: 'start' | 'end') => {
+    setEditingField(field);
+    if (field === 'start') {
+      setStartPickerMode('date');
+      setShowStartPicker(true);
+    } else {
+      setEndPickerMode('date');
+      setShowEndPicker(true);
+    }
+  };
+
+  const handleMenuItemPress = (item: MenuItem) => {
+    item.onPress();
+    closeMenu();
   };
 
   const renderCarCard = ({ item }: { item: Car }) => (
@@ -280,46 +487,42 @@ export default function CarSelectionScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
-        <View style={styles.profileIcon}>
+        <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
           <Text style={styles.profileText}>AV</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Trip Details - Editable */}
       <View style={styles.tripDetails}>
         <TouchableOpacity 
           style={styles.locationSection}
-          onPress={() => setShowLocationEdit(true)}
+          onPress={handleLocationEdit}
         >
           <Text style={styles.sectionLabel}>Location</Text>
           <View style={styles.locationRow}>
             <MapPin size={16} color="#059669" />
             <Text style={styles.locationText}>{location}</Text>
-            <ChevronDown size={16} color="#6B7280" />
+            <Edit3 size={16} color="#6B7280" />
           </View>
         </TouchableOpacity>
 
         <View style={styles.dateTimeSection}>
           <TouchableOpacity 
             style={styles.dateTimeItem}
-            onPress={() => {
-              setEditingField('start');
-              setShowDateTimeEdit(true);
-            }}
+            onPress={() => handleDateTimeEdit('start')}
           >
-            <Text style={styles.dateTimeLabel}>{startDate}</Text>
-            <Text style={styles.dateTimeValue}>{startTime}</Text>
+            <Text style={styles.dateTimeLabel}>{formatDateTime(tripStart, 'date')}</Text>
+            <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
+            <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.dateTimeItem}
-            onPress={() => {
-              setEditingField('end');
-              setShowDateTimeEdit(true);
-            }}
+            onPress={() => handleDateTimeEdit('end')}
           >
-            <Text style={styles.dateTimeLabel}>{endDate}</Text>
-            <Text style={styles.dateTimeValue}>{endTime}</Text>
+            <Text style={styles.dateTimeLabel}>{formatDateTime(tripEnd, 'date')}</Text>
+            <Text style={styles.dateTimeValue}>{formatDateTime(tripEnd, 'time')}</Text>
+            <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
           </TouchableOpacity>
         </View>
       </View>
@@ -330,7 +533,7 @@ export default function CarSelectionScreen() {
         <Text style={styles.subtitle}>Everyday booking made quick and easy!</Text>
       </View>
 
-      {/* Filter and Sort Bar */}
+      {/* Filter and Sort Bar - Scrollable */}
       <View style={styles.filterBar}>
         <TouchableOpacity style={styles.filterButton} onPress={openFilters}>
           <Filter size={16} color="#059669" />
@@ -342,13 +545,18 @@ export default function CarSelectionScreen() {
           )}
         </TouchableOpacity>
 
-        <View style={styles.filterTags}>
-          {filters.filter(f => f.selected).slice(0, 3).map(filter => (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterTagsContainer}
+          contentContainerStyle={styles.filterTagsContent}
+        >
+          {filters.filter(f => f.selected).map(filter => (
             <View key={filter.id} style={styles.filterTag}>
               <Text style={styles.filterTagText}>{filter.label}</Text>
             </View>
           ))}
-        </View>
+        </ScrollView>
 
         <TouchableOpacity style={styles.sortButton} onPress={openSort}>
           <ArrowUpDown size={16} color="#059669" />
@@ -356,7 +564,7 @@ export default function CarSelectionScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Car List */}
+      {/* Car List - Scrollable Daily Ride Section */}
       <FlatList
         data={cars}
         renderItem={renderCarCard}
@@ -366,74 +574,269 @@ export default function CarSelectionScreen() {
         contentContainerStyle={styles.carListContent}
       />
 
-      {/* Filters Modal */}
+      {/* Date/Time Pickers */}
+      {showStartPicker && Platform.OS !== 'web' && (
+        <View style={styles.pickerOverlay}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Select Start Date & Time</Text>
+              <TouchableOpacity onPress={() => setShowStartPicker(false)}>
+                <X size={20} color="#000000" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modeToggleContainer}>
+              <TouchableOpacity 
+                style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
+                onPress={() => setStartPickerMode('date')}
+              >
+                <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
+                  Date
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
+                onPress={() => setStartPickerMode('time')}
+              >
+                <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
+                  Time
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <DateTimePicker
+              value={tripStart}
+              mode={startPickerMode}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
+              minimumDate={new Date()}
+              textColor="#000000"
+              accentColor="#059669"
+            />
+          </View>
+        </View>
+      )}
+
+      {showEndPicker && Platform.OS !== 'web' && (
+        <View style={styles.pickerOverlay}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Select End Date & Time</Text>
+              <TouchableOpacity onPress={() => setShowEndPicker(false)}>
+                <X size={20} color="#000000" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modeToggleContainer}>
+              <TouchableOpacity 
+                style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
+                onPress={() => setEndPickerMode('date')}
+              >
+                <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
+                  Date
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
+                onPress={() => setEndPickerMode('time')}
+              >
+                <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
+                  Time
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <DateTimePicker
+              value={tripEnd}
+              mode={endPickerMode}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
+              minimumDate={tripStart}
+              textColor="#000000"
+              accentColor="#059669"
+            />
+          </View>
+        </View>
+      )}
+
+      {/* Location Edit Modal */}
+      <Modal
+        visible={showLocationEdit}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLocationEdit(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowLocationEdit(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.locationEditModal}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Edit Location</Text>
+                  <TouchableOpacity onPress={() => setShowLocationEdit(false)}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.locationEditContent}>
+                  <TextInput
+                    style={styles.locationEditInput}
+                    value={tempLocation}
+                    onChangeText={setTempLocation}
+                    placeholder="Enter location"
+                    autoFocus={true}
+                  />
+                  
+                  <View style={styles.locationEditButtons}>
+                    <TouchableOpacity 
+                      style={styles.cancelButton}
+                      onPress={() => setShowLocationEdit(false)}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.saveButton}
+                      onPress={saveLocationEdit}
+                    >
+                      <Text style={styles.saveButtonText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Filters Modal - Scrollable */}
       <Modal
         visible={showFilters}
         transparent={true}
         animationType="none"
         onRequestClose={closeFilters}
       >
-        <View style={styles.modalOverlay}>
-          <Animated.View 
-            style={[
-              styles.filterModal,
-              { transform: [{ translateX: slideAnim }] }
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filters</Text>
-              <TouchableOpacity onPress={closeFilters}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            
-            <FlatList
-              data={filters}
-              renderItem={renderFilterOption}
-              keyExtractor={(item) => item.id}
-              style={styles.filterList}
-              showsVerticalScrollIndicator={false}
-            />
-            
-            <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
-                <Text style={styles.applyButtonText}>Apply Filters</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </View>
+        <TouchableWithoutFeedback onPress={closeFilters}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <Animated.View 
+                style={[
+                  styles.filterModal,
+                  { transform: [{ translateX: slideAnim }] }
+                ]}
+              >
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Filters</Text>
+                  <TouchableOpacity onPress={closeFilters}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                
+                <FlatList
+                  data={filters}
+                  renderItem={renderFilterOption}
+                  keyExtractor={(item) => item.id}
+                  style={styles.filterList}
+                  showsVerticalScrollIndicator={false}
+                />
+                
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
+                    <Text style={styles.applyButtonText}>Apply Filters</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Sort Modal */}
+      {/* Sort Modal - Scrollable */}
       <Modal
         visible={showSort}
         transparent={true}
         animationType="none"
         onRequestClose={closeSort}
       >
-        <View style={styles.modalOverlay}>
-          <Animated.View 
-            style={[
-              styles.sortModal,
-              { transform: [{ translateX: sortSlideAnim }] }
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sort By</Text>
-              <TouchableOpacity onPress={closeSort}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            
-            <FlatList
-              data={sortOptions}
-              renderItem={renderSortOption}
-              keyExtractor={(item) => item.id}
-              style={styles.sortList}
-              showsVerticalScrollIndicator={false}
-            />
-          </Animated.View>
-        </View>
+        <TouchableWithoutFeedback onPress={closeSort}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <Animated.View 
+                style={[
+                  styles.sortModal,
+                  { transform: [{ translateX: sortSlideAnim }] }
+                ]}
+              >
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Sort By</Text>
+                  <TouchableOpacity onPress={closeSort}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                
+                <FlatList
+                  data={sortOptions}
+                  renderItem={renderSortOption}
+                  keyExtractor={(item) => item.id}
+                  style={styles.sortList}
+                  showsVerticalScrollIndicator={false}
+                />
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Sliding Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeMenu}
+      >
+        <TouchableWithoutFeedback onPress={closeMenu}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <Animated.View 
+                style={[
+                  styles.slideMenu,
+                  {
+                    transform: [{ translateX: menuSlideAnim }]
+                  }
+                ]}
+              >
+                <View style={styles.menuHeader}>
+                  <View style={styles.menuProfileSection}>
+                    <View style={styles.menuProfileIcon}>
+                      <Text style={styles.menuProfileText}>AV</Text>
+                    </View>
+                    <Text style={styles.menuProfileName}>Ananya</Text>
+                  </View>
+                  <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
+                    <X size={24} color="#374151" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
+                  {menuItems.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.menuItem}
+                      onPress={() => handleMenuItemPress(item)}
+                    >
+                      <View style={styles.menuItemIcon}>
+                        {item.icon}
+                      </View>
+                      <Text style={styles.menuItemText}>{item.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
@@ -516,6 +919,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    position: 'relative',
   },
   dateTimeLabel: {
     fontSize: 12,
@@ -527,6 +931,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
+  },
+  editIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
   titleSection: {
     alignItems: 'center',
@@ -581,16 +990,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  filterTags: {
+  filterTagsContainer: {
     flex: 1,
-    flexDirection: 'row',
-    gap: 8,
+  },
+  filterTagsContent: {
+    paddingRight: 12,
   },
   filterTag: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     backgroundColor: '#E0F2FE',
     borderRadius: 12,
+    marginRight: 8,
   },
   filterTagText: {
     fontSize: 12,
@@ -701,9 +1112,119 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9CA3AF',
   },
+  pickerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  pickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    margin: 20,
+    maxHeight: '80%',
+    width: '90%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modeToggleContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  modeToggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+  },
+  modeToggleButtonActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  modeToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  modeToggleTextActive: {
+    color: '#FFFFFF',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  locationEditModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    margin: 20,
+    marginTop: 100,
+  },
+  locationEditContent: {
+    padding: 20,
+  },
+  locationEditInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  locationEditButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   filterModal: {
     position: 'absolute',
@@ -820,5 +1341,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  slideMenu: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: screenWidth * 0.8,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: -2,
+      height: 0,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  menuProfileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  menuProfileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#059669',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuProfileText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  menuProfileName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  menuContent: {
+    flex: 1,
+    paddingTop: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  menuItemIcon: {
+    marginRight: 16,
+    width: 24,
+    alignItems: 'center',
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
   },
 });
