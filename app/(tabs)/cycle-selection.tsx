@@ -398,8 +398,13 @@ export default function CycleSelectionScreen() {
     closeMenu();
   };
 
+  const handleCyclePress = (cycle: Cycle) => {
+    // Navigate to cycle details screen
+    router.push('/cycle-details');
+  };
+
   const renderCycleCard = ({ item }: { item: Cycle }) => (
-    <TouchableOpacity style={styles.cycleCard}>
+    <TouchableOpacity style={styles.cycleCard} onPress={() => handleCyclePress(item)}>
       <View style={styles.cycleImageContainer}>
         <Image source={{ uri: item.image }} style={styles.cycleImage} />
         <View style={styles.cycleBadge}>

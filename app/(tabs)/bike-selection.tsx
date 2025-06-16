@@ -398,8 +398,13 @@ export default function BikeSelectionScreen() {
     closeMenu();
   };
 
+  const handleBikePress = (bike: Bike) => {
+    // Navigate to bike details screen
+    router.push('/bike-details');
+  };
+
   const renderBikeCard = ({ item }: { item: Bike }) => (
-    <TouchableOpacity style={styles.bikeCard}>
+    <TouchableOpacity style={styles.bikeCard} onPress={() => handleBikePress(item)}>
       <View style={styles.bikeImageContainer}>
         <Image source={{ uri: item.image }} style={styles.bikeImage} />
         <View style={styles.bikeBadge}>
@@ -494,6 +499,7 @@ export default function BikeSelectionScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity 
+             
             style={styles.dateTimeItem}
             onPress={() => handleDateTimeEdit('end')}
           >
