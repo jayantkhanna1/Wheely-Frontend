@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, SafeAreaView } from 'react-native';
-import { Search, MapPin, Mic, Calendar, Clock, Bike } from 'lucide-react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
+import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, MapIcon, Phone, Gift, Percent, HelpCircle, FileText, Globe } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
@@ -10,15 +10,26 @@ interface VehicleOption {
   icon: React.ReactNode;
 }
 
+interface MenuItem {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+}
+
+const { width: screenWidth } = Dimensions.get('window');
+
 export default function HomeScreen() {
   const [location, setLocation] = useState('');
   const [tripStart, setTripStart] = useState(new Date());
   const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000)); // 12 hours later
-  const [selectedVehicle, setSelectedVehicle] = useState<string>('bicycle');
+  const [selectedVehicle, setSelectedVehicle] = useState<string>(''); // No default selection
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [startPickerMode, setStartPickerMode] = useState<'date' | 'time'>('date');
   const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
+  const [showMenu, setShowMenu] = useState(false);
+  const slideAnim = useRef(new Animated.Value(screenWidth)).current;
 
   const vehicleOptions: VehicleOption[] = [
     {
@@ -31,9 +42,9 @@ export default function HomeScreen() {
       name: 'Bike',
       icon: (
         <View style={styles.bikeIcon}>
-          <View style={styles.bikeWheel} />
-          <View style={[styles.bikeWheel, styles.bikeWheelRight]} />
-          <View style={styles.bikeFrame} />
+          <View style={[styles.bikeWheel, { borderColor: selectedVehicle === 'bike' ? '#FFFFFF' : '#374151' }]} />
+          <View style={[styles.bikeWheel, styles.bikeWheelRight, { borderColor: selectedVehicle === 'bike' ? '#FFFFFF' : '#374151' }]} />
+          <View style={[styles.bikeFrame, { backgroundColor: selectedVehicle === 'bike' ? '#FFFFFF' : '#374151' }]} />
         </View>
       )
     },
@@ -42,12 +53,63 @@ export default function HomeScreen() {
       name: 'Car',
       icon: (
         <View style={styles.carIcon}>
-          <View style={styles.carBody} />
-          <View style={styles.carWindow} />
-          <View style={styles.carWheel} />
-          <View style={[styles.carWheel, styles.carWheelRight]} />
+          <View style={[styles.carBody, { backgroundColor: selectedVehicle === 'car' ? '#FFFFFF' : '#374151' }]} />
+          <View style={[styles.carWindow, { backgroundColor: selectedVehicle === 'car' ? '#FFFFFF' : '#374151' }]} />
+          <View style={[styles.carWheel, { backgroundColor: selectedVehicle === 'car' ? '#FFFFFF' : '#374151' }]} />
+          <View style={[styles.carWheel, styles.carWheelRight, { backgroundColor: selectedVehicle === 'car' ? '#FFFFFF' : '#374151' }]} />
         </View>
       )
+    }
+  ];
+
+  const menuItems: MenuItem[] = [
+    {
+      id: 'trips',
+      title: 'My Trips',
+      icon: <MapIcon size={24} color="#374151" />,
+      onPress: () => console.log('My Trips pressed')
+    },
+    {
+      id: 'contact',
+      title: 'Contact Us',
+      icon: <Phone size={24} color="#374151" />,
+      onPress: () => console.log('Contact Us pressed')
+    },
+    {
+      id: 'profile',
+      title: 'My Profile',
+      icon: <User size={24} color="#374151" />,
+      onPress: () => console.log('My Profile pressed')
+    },
+    {
+      id: 'rewards',
+      title: 'Rewards',
+      icon: <Gift size={24} color="#374151" />,
+      onPress: () => console.log('Rewards pressed')
+    },
+    {
+      id: 'offers',
+      title: 'Offers',
+      icon: <Percent size={24} color="#374151" />,
+      onPress: () => console.log('Offers pressed')
+    },
+    {
+      id: 'helpline',
+      title: 'Helpline Support',
+      icon: <HelpCircle size={24} color="#374151" />,
+      onPress: () => console.log('Helpline Support pressed')
+    },
+    {
+      id: 'policies',
+      title: 'Policies',
+      icon: <FileText size={24} color="#374151" />,
+      onPress: () => console.log('Policies pressed')
+    },
+    {
+      id: 'language',
+      title: 'Language',
+      icon: <Globe size={24} color="#374151" />,
+      onPress: () => console.log('Language pressed')
     }
   ];
 
@@ -104,6 +166,15 @@ export default function HomeScreen() {
   };
 
   const handleSearch = () => {
+    if (!selectedVehicle) {
+      alert('Please select a vehicle type');
+      return;
+    }
+    if (!location.trim()) {
+      alert('Please enter a location');
+      return;
+    }
+    
     console.log('Search initiated with:', {
       location,
       tripStart,
@@ -113,9 +184,44 @@ export default function HomeScreen() {
     // Here you would typically navigate to search results or make an API call
   };
 
+  const handleMicPress = () => {
+    // Implement voice input functionality
+    console.log('Voice input activated');
+    alert('Voice input feature will be implemented');
+  };
+
+  const handleLocationPress = () => {
+    // Implement GPS location functionality
+    console.log('Getting current location');
+    alert('GPS location feature will be implemented');
+  };
+
   const getUserInitials = () => {
-    // This would typically come from user data
     return 'AV'; // Ananya's initials as shown in the design
+  };
+
+  const openMenu = () => {
+    setShowMenu(true);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeMenu = () => {
+    Animated.timing(slideAnim, {
+      toValue: screenWidth,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowMenu(false);
+    });
+  };
+
+  const handleMenuItemPress = (item: MenuItem) => {
+    item.onPress();
+    closeMenu();
   };
 
   return (
@@ -128,9 +234,9 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, Ananya!!</Text>
-          <View style={styles.profileIcon}>
+          <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
             <Text style={styles.profileText}>{getUserInitials()}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Location Search */}
@@ -144,10 +250,10 @@ export default function HomeScreen() {
               placeholder="Location"
               placeholderTextColor="#9CA3AF"
             />
-            <TouchableOpacity style={styles.locationButton}>
+            <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress}>
               <MapPin size={20} color="#6B7280" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.micButton}>
+            <TouchableOpacity style={styles.micButton} onPress={handleMicPress}>
               <Mic size={20} color="#6B7280" />
             </TouchableOpacity>
           </View>
@@ -240,6 +346,56 @@ export default function HomeScreen() {
           />
         )}
       </ScrollView>
+
+      {/* Sliding Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeMenu}
+      >
+        <TouchableWithoutFeedback onPress={closeMenu}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <Animated.View 
+                style={[
+                  styles.slideMenu,
+                  {
+                    transform: [{ translateX: slideAnim }]
+                  }
+                ]}
+              >
+                <View style={styles.menuHeader}>
+                  <View style={styles.menuProfileSection}>
+                    <View style={styles.menuProfileIcon}>
+                      <Text style={styles.menuProfileText}>{getUserInitials()}</Text>
+                    </View>
+                    <Text style={styles.menuProfileName}>Ananya</Text>
+                  </View>
+                  <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
+                    <X size={24} color="#374151" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
+                  {menuItems.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.menuItem}
+                      onPress={() => handleMenuItemPress(item)}
+                    >
+                      <View style={styles.menuItemIcon}>
+                        {item.icon}
+                      </View>
+                      <Text style={styles.menuItemText}>{item.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -354,7 +510,7 @@ const styles = StyleSheet.create({
   dateTimeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#000000', // Changed to black for better visibility
   },
   vehicleContainer: {
     flexDirection: 'row',
@@ -482,5 +638,85 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // Modal and Sliding Menu Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  slideMenu: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: screenWidth * 0.8,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: -2,
+      height: 0,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  menuProfileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  menuProfileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#059669',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuProfileText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  menuProfileName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  menuContent: {
+    flex: 1,
+    paddingTop: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  menuItemIcon: {
+    marginRight: 16,
+    width: 24,
+    alignItems: 'center',
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
   },
 });
