@@ -14,30 +14,7 @@ import {
   TextInput,
   TouchableWithoutFeedback
 } from 'react-native';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Filter, 
-  ArrowUpDown,
-  Star,
-  Fuel,
-  Users,
-  Settings,
-  X,
-  ChevronDown,
-  ChevronUp,
-  User,
-  Map as MapIcon,
-  Phone,
-  Gift,
-  Percent,
-  CircleHelp as HelpCircle,
-  FileText,
-  Globe,
-  Edit3
-} from 'lucide-react-native';
+import { ArrowLeft, MapPin, Calendar, Clock, Filter, ArrowUpDown, Star, Fuel, Users, Settings, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
