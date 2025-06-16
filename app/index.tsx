@@ -31,7 +31,7 @@ export default function WelcomeScreen() {
 
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/login')}>
               <Text style={styles.loginLink}>Log in</Text>
             </TouchableOpacity>
           </View>

@@ -8,6 +8,7 @@ export default function VerifyEmailScreen() {
   const { email, customerId } = useLocalSearchParams();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'error' as 'success' | 'error' });
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -100,16 +101,55 @@ export default function VerifyEmailScreen() {
   };
 
   const handleResendOTP = async () => {
+    if (!customerId) {
+      showToast('Unable to resend OTP. Please try registering again.', 'error');
+      return;
+    }
+
+    setResendLoading(true);
+
     try {
-      showToast('Resending verification code...', 'success');
-      // Add resend OTP API call here if available
-      // const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/resendOTP/`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email }),
-      // });
+      const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/resendOtp/`;
+      console.log('Making resend OTP request to:', apiUrl);
+      
+      const requestData = {
+        user_id: parseInt(String(customerId)),
+      };
+      
+      console.log('Resend OTP request data:', requestData);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log('Resend OTP response status:', response.status);
+      const data = await response.json();
+      console.log('Resend OTP response data:', data);
+
+      if (response.ok && data.message === "OTP sent successfully") {
+        showToast('New verification code sent to your email!', 'success');
+        // Clear current OTP inputs
+        setOtp(['', '', '', '', '', '']);
+        // Focus first input
+        inputRefs.current[0]?.focus();
+      } else {
+        showToast(data.message || 'Failed to resend code. Please try again.', 'error');
+      }
     } catch (error) {
-      showToast('Failed to resend code. Please try again.', 'error');
+      console.error('Resend OTP error:', error);
+      
+      if (error instanceof TypeError && error.message === 'Network request failed') {
+        showToast('Cannot connect to server. Please check your internet connection.', 'error');
+      } else {
+        showToast('Network error. Please try again.', 'error');
+      }
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -169,9 +209,15 @@ export default function VerifyEmailScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.resendContainer} onPress={handleResendOTP}>
+        <TouchableOpacity 
+          style={styles.resendContainer} 
+          onPress={handleResendOTP}
+          disabled={resendLoading}
+        >
           <Text style={styles.resendText}>
-            Didn't receive the code? <Text style={styles.resendLink}>Resend Code</Text>
+            Didn't receive the code? <Text style={[styles.resendLink, resendLoading && styles.resendLinkDisabled]}>
+              {resendLoading ? 'Sending...' : 'Resend Code'}
+            </Text>
           </Text>
         </TouchableOpacity>
 
@@ -324,6 +370,9 @@ const styles = StyleSheet.create({
   resendLink: {
     color: '#059669',
     fontWeight: '600',
+  },
+  resendLinkDisabled: {
+    color: '#9CA3AF',
   },
   changeEmailContainer: {
     alignItems: 'center',
