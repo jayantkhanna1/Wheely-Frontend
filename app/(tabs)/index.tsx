@@ -37,8 +37,6 @@ export default function HomeScreen() {
   const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
   const [showMenu, setShowMenu] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-  const [showStartDropdown, setShowStartDropdown] = useState(false);
-  const [showEndDropdown, setShowEndDropdown] = useState(false);
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
 
   // Sample location suggestions
@@ -155,12 +153,23 @@ export default function HomeScreen() {
     }
   };
 
+  const formatDateTimeForDropdown = (date: Date) => {
+    const dateStr = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit'
+    });
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${dateStr}, ${timeStr}`;
+  };
+
   const handleDateTimeChange = (event: any, selectedDate?: Date, type: 'start' | 'end', mode: 'date' | 'time') => {
     if (Platform.OS === 'android') {
       setShowStartPicker(false);
       setShowEndPicker(false);
-      setShowStartDropdown(false);
-      setShowEndDropdown(false);
     }
 
     if (selectedDate) {
@@ -263,17 +272,15 @@ export default function HomeScreen() {
     closeMenu();
   };
 
-  const handleStartDateTimePress = (mode: 'date' | 'time') => {
-    setStartPickerMode(mode);
-    setShowStartDropdown(true);
+  const handleStartDateTimePress = () => {
+    setStartPickerMode('date');
     if (Platform.OS !== 'web') {
       setShowStartPicker(true);
     }
   };
 
-  const handleEndDateTimePress = (mode: 'date' | 'time') => {
-    setEndPickerMode(mode);
-    setShowEndDropdown(true);
+  const handleEndDateTimePress = () => {
+    setEndPickerMode('date');
     if (Platform.OS !== 'web') {
       setShowEndPicker(true);
     }
@@ -353,60 +360,32 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Date and Time Selection with Dropdowns */}
+        {/* Date and Time Selection - New Design */}
         <View style={styles.dateTimeContainer}>
           <View style={styles.dateTimeSection}>
-            <Text style={styles.dateTimeLabel}>Trip Start</Text>
-            <View style={styles.dateTimeRow}>
-              <TouchableOpacity 
-                style={[styles.dateTimeDropdown, { flex: 1, marginRight: 8 }]}
-                onPress={() => handleStartDateTimePress('date')}
-              >
-                <Calendar size={16} color="#000000" />
-                <Text style={styles.dateTimeText}>
-                  {formatDateTime(tripStart, 'date')}
-                </Text>
-                <ChevronDown size={16} color="#000000" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.dateTimeDropdown, { flex: 1, marginLeft: 8 }]}
-                onPress={() => handleStartDateTimePress('time')}
-              >
-                <Clock size={16} color="#000000" />
-                <Text style={styles.dateTimeText}>
-                  {formatDateTime(tripStart, 'time')}
-                </Text>
-                <ChevronDown size={16} color="#000000" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.dateTimeDropdownNew}
+              onPress={handleStartDateTimePress}
+            >
+              <Text style={styles.dateTimeLabel}>Trip Start</Text>
+              <Text style={styles.dateTimeValue}>
+                {formatDateTimeForDropdown(tripStart)}
+              </Text>
+              <ChevronDown size={20} color="#000000" style={styles.dropdownIcon} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.dateTimeSection}>
-            <Text style={styles.dateTimeLabel}>Trip End</Text>
-            <View style={styles.dateTimeRow}>
-              <TouchableOpacity 
-                style={[styles.dateTimeDropdown, { flex: 1, marginRight: 8 }]}
-                onPress={() => handleEndDateTimePress('date')}
-              >
-                <Calendar size={16} color="#000000" />
-                <Text style={styles.dateTimeText}>
-                  {formatDateTime(tripEnd, 'date')}
-                </Text>
-                <ChevronDown size={16} color="#000000" />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.dateTimeDropdown, { flex: 1, marginLeft: 8 }]}
-                onPress={() => handleEndDateTimePress('time')}
-              >
-                <Clock size={16} color="#000000" />
-                <Text style={styles.dateTimeText}>
-                  {formatDateTime(tripEnd, 'time')}
-                </Text>
-                <ChevronDown size={16} color="#000000" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.dateTimeDropdownNew}
+              onPress={handleEndDateTimePress}
+            >
+              <Text style={styles.dateTimeLabel}>Trip End</Text>
+              <Text style={styles.dateTimeValue}>
+                {formatDateTimeForDropdown(tripEnd)}
+              </Text>
+              <ChevronDown size={20} color="#000000" style={styles.dropdownIcon} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -671,39 +650,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateTimeLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  dateTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dateTimeDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  dateTimeDropdownNew: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    position: 'relative',
+    minHeight: 60,
+    justifyContent: 'center',
   },
-  dateTimeText: {
+  dateTimeValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000', // Black font for better visibility
-    flex: 1,
-    textAlign: 'center',
+    color: '#000000',
+    marginTop: 2,
+  },
+  dropdownIcon: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    marginTop: -10,
   },
   vehicleContainer: {
     flexDirection: 'row',
