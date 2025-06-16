@@ -373,6 +373,37 @@ export default function HomeScreen() {
               </Text>
               <ChevronDown size={20} color="#000000" style={styles.dropdownIcon} />
             </TouchableOpacity>
+            
+            {/* Date/Time Picker positioned right below Trip Start button */}
+            {showStartPicker && Platform.OS !== 'web' && (
+              <View style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={tripStart}
+                  mode={startPickerMode}
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
+                  minimumDate={new Date()}
+                  textColor="#000000"
+                  accentColor="#059669"
+                />
+                {Platform.OS === 'ios' && (
+                  <View style={styles.pickerButtons}>
+                    <TouchableOpacity 
+                      style={styles.pickerButton} 
+                      onPress={() => setShowStartPicker(false)}
+                    >
+                      <Text style={styles.pickerButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.pickerButton, styles.confirmButton]} 
+                      onPress={() => setShowStartPicker(false)}
+                    >
+                      <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.dateTimeSection}>
@@ -386,6 +417,37 @@ export default function HomeScreen() {
               </Text>
               <ChevronDown size={20} color="#000000" style={styles.dropdownIcon} />
             </TouchableOpacity>
+            
+            {/* Date/Time Picker positioned right below Trip End button */}
+            {showEndPicker && Platform.OS !== 'web' && (
+              <View style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={tripEnd}
+                  mode={endPickerMode}
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
+                  minimumDate={tripStart}
+                  textColor="#000000"
+                  accentColor="#059669"
+                />
+                {Platform.OS === 'ios' && (
+                  <View style={styles.pickerButtons}>
+                    <TouchableOpacity 
+                      style={styles.pickerButton} 
+                      onPress={() => setShowEndPicker(false)}
+                    >
+                      <Text style={styles.pickerButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.pickerButton, styles.confirmButton]} 
+                      onPress={() => setShowEndPicker(false)}
+                    >
+                      <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         </View>
 
@@ -417,27 +479,6 @@ export default function HomeScreen() {
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <Text style={styles.searchButtonText}>Search</Text>
         </TouchableOpacity>
-
-        {/* Date/Time Pickers */}
-        {showStartPicker && Platform.OS !== 'web' && (
-          <DateTimePicker
-            value={tripStart}
-            mode={startPickerMode}
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
-            minimumDate={new Date()}
-          />
-        )}
-
-        {showEndPicker && Platform.OS !== 'web' && (
-          <DateTimePicker
-            value={tripEnd}
-            mode={endPickerMode}
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
-            minimumDate={tripStart}
-          />
-        )}
       </View>
 
       {/* Sliding Menu Modal */}
@@ -648,6 +689,7 @@ const styles = StyleSheet.create({
   },
   dateTimeSection: {
     flex: 1,
+    position: 'relative',
   },
   dateTimeLabel: {
     fontSize: 12,
@@ -677,6 +719,54 @@ const styles = StyleSheet.create({
     right: 16,
     top: '50%',
     marginTop: -10,
+  },
+  // Date/Time Picker positioned below dropdown
+  pickerContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 12,
+    marginTop: 8,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  pickerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  pickerButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  confirmButton: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
   },
   vehicleContainer: {
     flexDirection: 'row',
