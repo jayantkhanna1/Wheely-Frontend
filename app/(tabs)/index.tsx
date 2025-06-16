@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
-import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, MapIcon, Phone, Gift, Percent, HelpCircle, FileText, Globe } from 'lucide-react-native';
+import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
