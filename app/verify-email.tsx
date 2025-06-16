@@ -153,6 +153,13 @@ export default function VerifyEmailScreen() {
     }
   };
 
+  const handleChangeEmail = () => {
+    router.push({
+      pathname: '/change-email',
+      params: { customerId: String(customerId) }
+    });
+  };
+
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
@@ -230,7 +237,7 @@ export default function VerifyEmailScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.changeEmailContainer}>
+          <TouchableOpacity style={styles.changeEmailContainer} onPress={handleChangeEmail}>
             <Text style={styles.changeEmailText}>
               Wrong email? <Text style={styles.changeEmailLink}>Send to different email</Text>
             </Text>
