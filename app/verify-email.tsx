@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import Toast from '@/components/Toast';
@@ -154,7 +154,10 @@ export default function VerifyEmailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <Toast {...toast} onHide={hideToast} />
       
       <View style={styles.header}>
@@ -170,62 +173,69 @@ export default function VerifyEmailScreen() {
         <View style={styles.progressDot} />
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.messageContainer}>
-          <Text style={styles.message}>
-            We just sent a 6-digit code to{'\n'}
-            <Text style={styles.email}>{email}</Text> enter it below:
-          </Text>
-        </View>
-
-        <View style={styles.otpContainer}>
-          <Text style={styles.codeLabel}>Verification Code</Text>
-          <View style={styles.otpInputContainer}>
-            {otp.map((digit, index) => (
-              <TextInput
-                key={index}
-                ref={(ref) => (inputRefs.current[index] = ref)}
-                style={[styles.otpInput, digit && styles.otpInputFilled]}
-                value={digit}
-                onChangeText={(value) => handleOtpChange(value, index)}
-                onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
-                keyboardType="numeric"
-                maxLength={1}
-                textAlign="center"
-                autoFocus={index === 0}
-                selectTextOnFocus
-              />
-            ))}
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
-          onPress={handleVerifyEmail}
-          disabled={loading}
-        >
-          <Text style={styles.verifyButtonText}>
-            {loading ? 'Verifying...' : 'Verify Email'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.resendContainer} 
-          onPress={handleResendOTP}
-          disabled={resendLoading}
-        >
-          <Text style={styles.resendText}>
-            Didn't receive the code? <Text style={[styles.resendLink, resendLoading && styles.resendLinkDisabled]}>
-              {resendLoading ? 'Sending...' : 'Resend Code'}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <View style={styles.messageContainer}>
+            <Text style={styles.message}>
+              We just sent a 6-digit code to{'\n'}
+              <Text style={styles.email}>{email}</Text> enter it below:
             </Text>
-          </Text>
-        </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.changeEmailContainer}>
-          <Text style={styles.changeEmailText}>
-            Wrong email? <Text style={styles.changeEmailLink}>Send to different email</Text>
-          </Text>
-        </TouchableOpacity>
+          <View style={styles.otpContainer}>
+            <Text style={styles.codeLabel}>Verification Code</Text>
+            <View style={styles.otpInputContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  style={[styles.otpInput, digit && styles.otpInputFilled]}
+                  value={digit}
+                  onChangeText={(value) => handleOtpChange(value, index)}
+                  onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  textAlign="center"
+                  autoFocus={index === 0}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
+            onPress={handleVerifyEmail}
+            disabled={loading}
+          >
+            <Text style={styles.verifyButtonText}>
+              {loading ? 'Verifying...' : 'Verify Email'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.resendContainer} 
+            onPress={handleResendOTP}
+            disabled={resendLoading}
+          >
+            <Text style={styles.resendText}>
+              Didn't receive the code? <Text style={[styles.resendLink, resendLoading && styles.resendLinkDisabled]}>
+                {resendLoading ? 'Sending...' : 'Resend Code'}
+              </Text>
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.changeEmailContainer}>
+            <Text style={styles.changeEmailText}>
+              Wrong email? <Text style={styles.changeEmailLink}>Send to different email</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.termsContainer}>
           <Text style={styles.termsText}>
@@ -233,8 +243,8 @@ export default function VerifyEmailScreen() {
             <Text style={styles.termsLink}>Terms</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>.
           </Text>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -263,7 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    marginBottom: 40,
+    marginBottom: 20,
     gap: 8,
   },
   progressDot: {
@@ -275,10 +285,18 @@ const styles = StyleSheet.create({
   progressActive: {
     backgroundColor: '#059669',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    minHeight: 400,
   },
   messageContainer: {
     alignItems: 'center',
@@ -389,6 +407,7 @@ const styles = StyleSheet.create({
   },
   termsContainer: {
     alignItems: 'center',
+    paddingTop: 20,
     paddingBottom: 30,
   },
   termsText: {
