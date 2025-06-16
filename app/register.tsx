@@ -87,21 +87,38 @@ export default function RegisterScreen() {
       const data = await response.json();
       console.log('Response data:', data);
 
-      if (response.ok && data.message === "Customer registered successfully. OTP sent to email.") {
-        showToast('Registration successful! Redirecting to verification...', 'success');
-        
-        // Use replace instead of push to ensure proper navigation
-        setTimeout(() => {
-          router.replace({
-            pathname: '/verify-email',
-            params: { 
-              email: formData.email, 
-              customerId: String(data.customer_id) 
-            }
-          });
-        }, 1500);
+      if (response.ok) {
+        // Check for successful registration message
+        if (data.message === "Customer registered successfully. OTP sent to email." || 
+            data.message?.includes("OTP sent") || 
+            data.success === true) {
+          
+          showToast('Registration successful! Please check your email for verification code.', 'success');
+          
+          // Navigate to verification screen immediately
+          setTimeout(() => {
+            router.push({
+              pathname: '/verify-email',
+              params: { 
+                email: formData.email, 
+                customerId: String(data.customer_id || data.id || 'temp_id')
+              }
+            });
+          }, 1000);
+        } else {
+          showToast(data.message || 'Registration completed but verification step failed', 'error');
+        }
       } else {
-        showToast(data.message || 'Registration failed', 'error');
+        // Handle different error scenarios
+        if (response.status === 400) {
+          showToast(data.message || 'Invalid registration data. Please check your inputs.', 'error');
+        } else if (response.status === 409) {
+          showToast('An account with this email already exists.', 'error');
+        } else if (response.status >= 500) {
+          showToast('Server error. Please try again later.', 'error');
+        } else {
+          showToast(data.message || 'Registration failed. Please try again.', 'error');
+        }
       }
     } catch (error) {
       console.error('Registration error:', error);
