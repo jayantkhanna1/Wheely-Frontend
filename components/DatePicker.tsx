@@ -54,18 +54,39 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         <Text style={[styles.dateText, !value && styles.placeholderText]}>
           {value ? formatDate(value) : placeholder}
         </Text>
-        <Calendar size={20} color="#6B7280" />
+        <Calendar size={20} color="#000000" />
       </TouchableOpacity>
 
       {showPicker && Platform.OS !== 'web' && (
-        <DateTimePicker
-          value={value || new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-          minimumDate={new Date(1900, 0, 1)}
-        />
+        <View style={styles.pickerContainer}>
+          <DateTimePicker
+            value={value || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+            minimumDate={new Date(1900, 0, 1)}
+            textColor="#000000"
+            accentColor="#059669"
+            style={styles.picker}
+          />
+          {Platform.OS === 'ios' && (
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity 
+                style={styles.pickerButton} 
+                onPress={() => setShowPicker(false)}
+              >
+                <Text style={styles.pickerButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.pickerButton, styles.confirmButton]} 
+                onPress={() => setShowPicker(false)}
+              >
+                <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       )}
     </View>
   );
@@ -78,24 +99,79 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: '#000000',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   dateText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
+    fontWeight: '500',
   },
   placeholderText: {
-    color: '#9CA3AF',
+    color: '#666666',
+    fontWeight: '400',
+  },
+  pickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#000000',
+    borderRadius: 12,
+    marginTop: 8,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  picker: {
+    backgroundColor: '#FFFFFF',
+  },
+  pickerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  pickerButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
+  confirmButton: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
   },
 });
