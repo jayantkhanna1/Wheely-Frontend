@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Anim
 import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, ChevronDown, ChevronUp } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
+import { router } from 'expo-router';
 
 interface VehicleOption {
   id: string;
@@ -209,6 +210,12 @@ export default function HomeScreen() {
     }
     if (!location.trim()) {
       alert('Please enter a location');
+      return;
+    }
+    
+    // Navigate to car selection screen if car is selected
+    if (selectedVehicle === 'car') {
+      router.push('/car-selection');
       return;
     }
     
