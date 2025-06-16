@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Car } from 'lucide-react-native';
+import { Chrome as Home, Car, Bike, Bicycle } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -36,6 +36,26 @@ export default function TabLayout() {
           title: 'Cars',
           tabBarIcon: ({ size, color }) => (
             <Car size={size} color={color} />
+          ),
+          href: null, // Hide from tab bar but keep accessible via navigation
+        }}
+      />
+      <Tabs.Screen
+        name="bike-selection"
+        options={{
+          title: 'Bikes',
+          tabBarIcon: ({ size, color }) => (
+            <Bike size={size} color={color} />
+          ),
+          href: null, // Hide from tab bar but keep accessible via navigation
+        }}
+      />
+      <Tabs.Screen
+        name="cycle-selection"
+        options={{
+          title: 'Cycles',
+          tabBarIcon: ({ size, color }) => (
+            <Bicycle size={size} color={color} />
           ),
           href: null, // Hide from tab bar but keep accessible via navigation
         }}

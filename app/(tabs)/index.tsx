@@ -213,19 +213,14 @@ export default function HomeScreen() {
       return;
     }
     
-    // Navigate to car selection screen if car is selected
+    // Navigate to appropriate selection screen based on vehicle type
     if (selectedVehicle === 'car') {
       router.push('/car-selection');
-      return;
+    } else if (selectedVehicle === 'bike') {
+      router.push('/bike-selection');
+    } else if (selectedVehicle === 'bicycle') {
+      router.push('/cycle-selection');
     }
-    
-    console.log('Search initiated with:', {
-      location,
-      tripStart,
-      tripEnd,
-      selectedVehicle
-    });
-    // Here you would typically navigate to search results or make an API call
   };
 
   const handleMicPress = () => {
