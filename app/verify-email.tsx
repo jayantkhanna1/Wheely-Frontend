@@ -169,7 +169,7 @@ export default function VerifyEmailScreen() {
       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" />
+          <ArrowLeft size={20} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Verify your email 2 / 2</Text>
       </View>
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000000',
     marginLeft: 16,
@@ -310,10 +310,10 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   message: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#374151',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   email: {
     fontWeight: '600',
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   codeLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#374151',
     marginBottom: 16,
@@ -335,11 +335,11 @@ const styles = StyleSheet.create({
   },
   otpInput: {
     flex: 1,
-    height: 60,
+    height: 50,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
     color: '#374151',
     backgroundColor: '#FFFFFF',
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   verifyButton: {
     backgroundColor: '#059669',
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 24,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   verifyButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   resendText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
   },
   resendLink: {
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   changeEmailText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
   },
   changeEmailLink: {
@@ -418,10 +418,10 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   termsText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   termsLink: {
     color: '#059669',

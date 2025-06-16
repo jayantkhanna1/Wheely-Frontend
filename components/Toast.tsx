@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   toast: {
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   text: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

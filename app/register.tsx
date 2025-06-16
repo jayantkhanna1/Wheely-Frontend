@@ -142,7 +142,7 @@ export default function RegisterScreen() {
       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" />
+          <ArrowLeft size={20} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create your account 1 / 2</Text>
       </View>
@@ -225,9 +225,9 @@ export default function RegisterScreen() {
                 style={styles.eyeButton}
               >
                 {showPassword ? (
-                  <EyeOff size={20} color="#6B7280" />
+                  <EyeOff size={18} color="#6B7280" />
                 ) : (
-                  <Eye size={20} color="#6B7280" />
+                  <Eye size={18} color="#6B7280" />
                 )}
               </TouchableOpacity>
             </View>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000000',
     marginLeft: 16,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#374151',
   },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    fontSize: 16,
+    fontSize: 14,
     color: '#374151',
     backgroundColor: '#FFFFFF',
   },
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    fontSize: 16,
+    fontSize: 14,
     color: '#374151',
   },
   eyeButton: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#059669',
   },
   requirementText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
   },
   requirementTextMet: {
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     backgroundColor: '#059669',
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 20,
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   continueButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -406,10 +406,10 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
   termsText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   termsLink: {
     color: '#059669',

@@ -8,7 +8,7 @@ export default function CreateAccountScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" />
+          <ArrowLeft size={20} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create new account</Text>
       </View>
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000000',
     marginLeft: 16,
@@ -92,8 +92,8 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   vehicleImage: {
-    width: 280,
-    height: 160,
+    width: 260,
+    height: 140,
     borderRadius: 12,
   },
   textContainer: {
@@ -101,27 +101,27 @@ const styles = StyleSheet.create({
     marginVertical: 40,
   },
   description: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#374151',
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 24,
   },
   buttonContainer: {
     gap: 16,
   },
   emailButton: {
     backgroundColor: '#059669',
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   emailButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   orText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
     marginVertical: 8,
@@ -129,12 +129,12 @@ const styles = StyleSheet.create({
   socialButton: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingVertical: 18,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   socialButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500',
     color: '#374151',
   },
@@ -143,10 +143,10 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   termsText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   termsLink: {
     color: '#059669',

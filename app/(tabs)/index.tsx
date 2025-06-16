@@ -61,7 +61,7 @@ export default function HomeScreen() {
     {
       id: 'bicycle',
       name: 'Bicycle',
-      icon: <Bike size={32} color={selectedVehicle === 'bicycle' ? '#FFFFFF' : '#374151'} strokeWidth={1.5} />
+      icon: <Bike size={28} color={selectedVehicle === 'bicycle' ? '#FFFFFF' : '#374151'} strokeWidth={1.5} />
     },
     {
       id: 'bike',
@@ -92,49 +92,49 @@ export default function HomeScreen() {
     {
       id: 'trips',
       title: 'My Trips',
-      icon: <MapIcon size={24} color="#374151" />,
+      icon: <MapIcon size={20} color="#374151" />,
       onPress: () => console.log('My Trips pressed')
     },
     {
       id: 'contact',
       title: 'Contact Us',
-      icon: <Phone size={24} color="#374151" />,
+      icon: <Phone size={20} color="#374151" />,
       onPress: () => console.log('Contact Us pressed')
     },
     {
       id: 'profile',
       title: 'My Profile',
-      icon: <User size={24} color="#374151" />,
+      icon: <User size={20} color="#374151" />,
       onPress: () => console.log('My Profile pressed')
     },
     {
       id: 'rewards',
       title: 'Rewards',
-      icon: <Gift size={24} color="#374151" />,
+      icon: <Gift size={20} color="#374151" />,
       onPress: () => console.log('Rewards pressed')
     },
     {
       id: 'offers',
       title: 'Offers',
-      icon: <Percent size={24} color="#374151" />,
+      icon: <Percent size={20} color="#374151" />,
       onPress: () => console.log('Offers pressed')
     },
     {
       id: 'helpline',
       title: 'Helpline Support',
-      icon: <HelpCircle size={24} color="#374151" />,
+      icon: <HelpCircle size={20} color="#374151" />,
       onPress: () => console.log('Helpline Support pressed')
     },
     {
       id: 'policies',
       title: 'Policies',
-      icon: <FileText size={24} color="#374151" />,
+      icon: <FileText size={20} color="#374151" />,
       onPress: () => console.log('Policies pressed')
     },
     {
       id: 'language',
       title: 'Language',
-      icon: <Globe size={24} color="#374151" />,
+      icon: <Globe size={20} color="#374151" />,
       onPress: () => console.log('Language pressed')
     }
   ];
@@ -328,7 +328,7 @@ export default function HomeScreen() {
       onPress={() => handleLocationSuggestionPress(item)}
     >
       <View style={styles.suggestionIcon}>
-        <MapPin size={16} color="#6B7280" />
+        <MapPin size={14} color="#6B7280" />
       </View>
       <View style={styles.suggestionContent}>
         <Text style={styles.suggestionName}>{item.name}</Text>
@@ -365,7 +365,7 @@ export default function HomeScreen() {
           {/* Location Search */}
           <View style={styles.locationContainer}>
             <View style={styles.locationInputContainer}>
-              <Search size={20} color="#6B7280" style={styles.searchIcon} />
+              <Search size={18} color="#6B7280" style={styles.searchIcon} />
               <TextInput
                 style={styles.locationInput}
                 value={location}
@@ -375,10 +375,10 @@ export default function HomeScreen() {
                 onFocus={() => setShowLocationSuggestions(location.length > 0)}
               />
               <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress}>
-                <MapPin size={20} color="#6B7280" />
+                <MapPin size={18} color="#6B7280" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.micButton} onPress={handleMicPress}>
-                <Mic size={20} color="#6B7280" />
+                <Mic size={18} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
@@ -409,9 +409,9 @@ export default function HomeScreen() {
                   {formatDateTimeForDropdown(tripStart)}
                 </Text>
                 {showStartPicker ? (
-                  <ChevronUp size={18} color="#000000" style={styles.dropdownIcon} />
+                  <ChevronUp size={16} color="#000000" style={styles.dropdownIcon} />
                 ) : (
-                  <ChevronDown size={18} color="#000000" style={styles.dropdownIcon} />
+                  <ChevronDown size={16} color="#000000" style={styles.dropdownIcon} />
                 )}
               </TouchableOpacity>
             </View>
@@ -426,9 +426,9 @@ export default function HomeScreen() {
                   {formatDateTimeForDropdown(tripEnd)}
                 </Text>
                 {showEndPicker ? (
-                  <ChevronUp size={18} color="#000000" style={styles.dropdownIcon} />
+                  <ChevronUp size={16} color="#000000" style={styles.dropdownIcon} />
                 ) : (
-                  <ChevronDown size={18} color="#000000" style={styles.dropdownIcon} />
+                  <ChevronDown size={16} color="#000000" style={styles.dropdownIcon} />
                 )}
               </TouchableOpacity>
             </View>
@@ -443,7 +443,7 @@ export default function HomeScreen() {
                   style={styles.pickerCloseButton} 
                   onPress={closeStartPicker}
                 >
-                  <X size={20} color="#000000" />
+                  <X size={18} color="#000000" />
                 </TouchableOpacity>
               </View>
               
@@ -453,7 +453,7 @@ export default function HomeScreen() {
                   style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
                   onPress={() => switchToDateMode('start')}
                 >
-                  <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Calendar size={14} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
                   <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
                     Date
                   </Text>
@@ -462,7 +462,7 @@ export default function HomeScreen() {
                   style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
                   onPress={() => switchToTimeMode('start')}
                 >
-                  <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Clock size={14} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
                   <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
                     Time
                   </Text>
@@ -506,7 +506,7 @@ export default function HomeScreen() {
                   style={styles.pickerCloseButton} 
                   onPress={closeEndPicker}
                 >
-                  <X size={20} color="#000000" />
+                  <X size={18} color="#000000" />
                 </TouchableOpacity>
               </View>
               
@@ -516,7 +516,7 @@ export default function HomeScreen() {
                   style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
                   onPress={() => switchToDateMode('end')}
                 >
-                  <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Calendar size={14} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
                   <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
                     Date
                   </Text>
@@ -525,7 +525,7 @@ export default function HomeScreen() {
                   style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
                   onPress={() => switchToTimeMode('end')}
                 >
-                  <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Clock size={14} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
                   <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
                     Time
                   </Text>
@@ -617,7 +617,7 @@ export default function HomeScreen() {
                       <Text style={styles.menuProfileName}>Ananya</Text>
                     </View>
                     <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
-                      <X size={24} color="#374151" />
+                      <X size={20} color="#374151" />
                     </TouchableOpacity>
                   </View>
 
@@ -662,20 +662,20 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#111827',
   },
   profileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#059669',
     justifyContent: 'center',
     alignItems: 'center',
   },
   profileText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   locationInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: '#374151',
     paddingVertical: 16,
   },
@@ -755,13 +755,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   suggestionName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#111827',
     marginBottom: 2,
   },
   suggestionAddress: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
   },
   suggestionType: {
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
   },
   suggestionTypeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
   },
   suggestionTypeTextPopular: {
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   dateTimeLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '500',
     color: '#6B7280',
     marginBottom: 4,
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dateTimeValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#000000',
     marginTop: 2,
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 12,
     top: '50%',
-    marginTop: -9,
+    marginTop: -8,
   },
   // Date/Time Picker positioned below the entire date/time container with full width
   pickerContainerFullWidth: {
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   pickerTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#000000',
   },
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
     borderColor: '#059669',
   },
   modeToggleText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#374151',
   },
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
     borderColor: '#059669',
   },
   pickerButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#000000',
   },
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 24,
+    paddingVertical: 20,
     paddingHorizontal: 16,
     alignItems: 'center',
     shadowColor: '#000000',
@@ -959,13 +959,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
   },
   vehicleIconContainer: {
-    marginBottom: 12,
-    height: 40,
+    marginBottom: 10,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
   vehicleText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: '#374151',
   },
@@ -975,14 +975,14 @@ const styles = StyleSheet.create({
   },
   // Custom bike icon styles
   bikeIcon: {
-    width: 32,
-    height: 20,
+    width: 28,
+    height: 18,
     position: 'relative',
   },
   bikeWheel: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     borderWidth: 2,
     borderColor: '#374151',
     position: 'absolute',
@@ -993,53 +993,53 @@ const styles = StyleSheet.create({
   },
   bikeFrame: {
     position: 'absolute',
-    top: 12,
-    left: 6,
-    right: 6,
+    top: 11,
+    left: 5,
+    right: 5,
     height: 2,
     backgroundColor: '#374151',
   },
   // Custom car icon styles
   carIcon: {
-    width: 32,
-    height: 20,
+    width: 28,
+    height: 18,
     position: 'relative',
   },
   carBody: {
     position: 'absolute',
-    top: 6,
+    top: 5,
     left: 2,
     right: 2,
-    height: 8,
+    height: 7,
     backgroundColor: '#374151',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   carWindow: {
     position: 'absolute',
     top: 2,
-    left: 8,
-    right: 8,
-    height: 6,
+    left: 7,
+    right: 7,
+    height: 5,
     backgroundColor: '#374151',
     borderRadius: 2,
   },
   carWheel: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: '#374151',
     position: 'absolute',
     bottom: 0,
-    left: 4,
+    left: 3,
   },
   carWheelRight: {
-    right: 4,
+    right: 3,
     left: 'auto' as any,
   },
   searchButton: {
     backgroundColor: '#059669',
     borderRadius: 16,
-    paddingVertical: 20,
+    paddingVertical: 18,
     alignItems: 'center',
     shadowColor: '#059669',
     shadowOffset: {
@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   searchButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -1092,21 +1092,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuProfileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#059669',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   menuProfileText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   menuProfileName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#111827',
   },
@@ -1127,11 +1127,11 @@ const styles = StyleSheet.create({
   },
   menuItemIcon: {
     marginRight: 16,
-    width: 24,
+    width: 20,
     alignItems: 'center',
   },
   menuItemText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#374151',
   },

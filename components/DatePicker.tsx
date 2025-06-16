@@ -54,7 +54,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         <Text style={[styles.dateText, !value && styles.placeholderText]}>
           {value ? formatDate(value) : placeholder}
         </Text>
-        <Calendar size={20} color="#000000" />
+        <Calendar size={18} color="#000000" />
       </TouchableOpacity>
 
       {showPicker && Platform.OS !== 'web' && (
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#000000',
   },
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   dateText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#000000',
     fontWeight: '500',
   },
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     borderColor: '#059669',
   },
   pickerButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#000000',
   },
