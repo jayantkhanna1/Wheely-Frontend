@@ -53,6 +53,7 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
+      console.log(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/register/`);
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/register/`, {
         method: 'POST',
         headers: {
@@ -78,6 +79,7 @@ export default function RegisterScreen() {
         showToast(data.message || 'Registration failed', 'error');
       }
     } catch (error) {
+      console.error('Registration error:', error);
       showToast('Network error. Please try again.', 'error');
     } finally {
       setLoading(false);
