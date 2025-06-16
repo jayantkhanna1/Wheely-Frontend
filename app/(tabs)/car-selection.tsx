@@ -398,8 +398,13 @@ export default function CarSelectionScreen() {
     closeMenu();
   };
 
+  const handleCarPress = (car: Car) => {
+    // Navigate to car details screen
+    router.push('/car-details');
+  };
+
   const renderCarCard = ({ item }: { item: Car }) => (
-    <TouchableOpacity style={styles.carCard}>
+    <TouchableOpacity style={styles.carCard} onPress={() => handleCarPress(item)}>
       <View style={styles.carImageContainer}>
         <Image source={{ uri: item.image }} style={styles.carImage} />
         <View style={styles.carBadge}>

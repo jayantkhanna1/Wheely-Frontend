@@ -60,6 +60,16 @@ export default function TabLayout() {
           href: null, // Hide from tab bar but keep accessible via navigation
         }}
       />
+      <Tabs.Screen
+        name="car-details"
+        options={{
+          title: 'Car Details',
+          tabBarIcon: ({ size, color }) => (
+            <Car size={size} color={color} />
+          ),
+          href: null, // Hide from tab bar but keep accessible via navigation
+        }}
+      />
     </Tabs>
   );
 }
