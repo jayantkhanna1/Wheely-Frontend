@@ -168,8 +168,7 @@ export default function HomeScreen() {
 
   const handleDateTimeChange = (event: any, selectedDate?: Date, type: 'start' | 'end', mode: 'date' | 'time') => {
     if (Platform.OS === 'android') {
-      setShowStartPicker(false);
-      setShowEndPicker(false);
+      // Don't close picker immediately on Android for better UX
     }
 
     if (selectedDate) {
@@ -296,6 +295,22 @@ export default function HomeScreen() {
 
   const closeEndPicker = () => {
     setShowEndPicker(false);
+  };
+
+  const switchToTimeMode = (type: 'start' | 'end') => {
+    if (type === 'start') {
+      setStartPickerMode('time');
+    } else {
+      setEndPickerMode('time');
+    }
+  };
+
+  const switchToDateMode = (type: 'start' | 'end') => {
+    if (type === 'start') {
+      setStartPickerMode('date');
+    } else {
+      setEndPickerMode('date');
+    }
   };
 
   // Close dropdowns when clicking outside
@@ -429,6 +444,29 @@ export default function HomeScreen() {
                   <X size={20} color="#000000" />
                 </TouchableOpacity>
               </View>
+              
+              {/* Mode Toggle Buttons */}
+              <View style={styles.modeToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
+                  onPress={() => switchToDateMode('start')}
+                >
+                  <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
+                  onPress={() => switchToTimeMode('start')}
+                >
+                  <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
+                    Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <DateTimePicker
                 value={tripStart}
                 mode={startPickerMode}
@@ -438,6 +476,7 @@ export default function HomeScreen() {
                 textColor="#000000"
                 accentColor="#059669"
               />
+              
               {Platform.OS === 'ios' && (
                 <View style={styles.pickerButtons}>
                   <TouchableOpacity 
@@ -468,6 +507,29 @@ export default function HomeScreen() {
                   <X size={20} color="#000000" />
                 </TouchableOpacity>
               </View>
+              
+              {/* Mode Toggle Buttons */}
+              <View style={styles.modeToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
+                  onPress={() => switchToDateMode('end')}
+                >
+                  <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
+                  onPress={() => switchToTimeMode('end')}
+                >
+                  <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
+                    Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <DateTimePicker
                 value={tripEnd}
                 mode={endPickerMode}
@@ -477,6 +539,7 @@ export default function HomeScreen() {
                 textColor="#000000"
                 accentColor="#059669"
               />
+              
               {Platform.OS === 'ios' && (
                 <View style={styles.pickerButtons}>
                   <TouchableOpacity 
@@ -802,6 +865,39 @@ const styles = StyleSheet.create({
   },
   pickerCloseButton: {
     padding: 4,
+  },
+  modeToggleContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modeToggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    gap: 6,
+  },
+  modeToggleButtonActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  modeToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  modeToggleTextActive: {
+    color: '#FFFFFF',
   },
   pickerButtons: {
     flexDirection: 'row',
