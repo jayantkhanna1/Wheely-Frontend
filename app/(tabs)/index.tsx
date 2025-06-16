@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback } from 'react-native';
-import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback, FlatList } from 'react-native';
+import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, ChevronDown } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
@@ -17,6 +17,13 @@ interface MenuItem {
   onPress: () => void;
 }
 
+interface LocationSuggestion {
+  id: string;
+  name: string;
+  address: string;
+  type: 'popular' | 'recent' | 'nearby';
+}
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function HomeScreen() {
@@ -29,7 +36,27 @@ export default function HomeScreen() {
   const [startPickerMode, setStartPickerMode] = useState<'date' | 'time'>('date');
   const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
   const [showMenu, setShowMenu] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [showStartDropdown, setShowStartDropdown] = useState(false);
+  const [showEndDropdown, setShowEndDropdown] = useState(false);
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
+
+  // Sample location suggestions
+  const locationSuggestions: LocationSuggestion[] = [
+    { id: '1', name: 'Airport Terminal 1', address: 'International Airport, Delhi', type: 'popular' },
+    { id: '2', name: 'Connaught Place', address: 'Central Delhi, New Delhi', type: 'popular' },
+    { id: '3', name: 'India Gate', address: 'Rajpath, New Delhi', type: 'popular' },
+    { id: '4', name: 'Red Fort', address: 'Netaji Subhash Marg, Delhi', type: 'popular' },
+    { id: '5', name: 'Lotus Temple', address: 'Bahapur, New Delhi', type: 'recent' },
+    { id: '6', name: 'Qutub Minar', address: 'Mehrauli, New Delhi', type: 'recent' },
+    { id: '7', name: 'Akshardham Temple', address: 'Noida Mor, Delhi', type: 'nearby' },
+    { id: '8', name: 'Humayun Tomb', address: 'Mathura Road, Delhi', type: 'nearby' },
+  ];
+
+  const filteredSuggestions = locationSuggestions.filter(suggestion =>
+    suggestion.name.toLowerCase().includes(location.toLowerCase()) ||
+    suggestion.address.toLowerCase().includes(location.toLowerCase())
+  );
 
   const vehicleOptions: VehicleOption[] = [
     {
@@ -132,6 +159,8 @@ export default function HomeScreen() {
     if (Platform.OS === 'android') {
       setShowStartPicker(false);
       setShowEndPicker(false);
+      setShowStartDropdown(false);
+      setShowEndDropdown(false);
     }
 
     if (selectedDate) {
@@ -196,6 +225,16 @@ export default function HomeScreen() {
     alert('GPS location feature will be implemented');
   };
 
+  const handleLocationChange = (text: string) => {
+    setLocation(text);
+    setShowLocationSuggestions(text.length > 0);
+  };
+
+  const handleLocationSuggestionPress = (suggestion: LocationSuggestion) => {
+    setLocation(suggestion.name);
+    setShowLocationSuggestions(false);
+  };
+
   const getUserInitials = () => {
     return 'AV'; // Ananya's initials as shown in the design
   };
@@ -224,13 +263,53 @@ export default function HomeScreen() {
     closeMenu();
   };
 
+  const handleStartDateTimePress = (mode: 'date' | 'time') => {
+    setStartPickerMode(mode);
+    setShowStartDropdown(true);
+    if (Platform.OS !== 'web') {
+      setShowStartPicker(true);
+    }
+  };
+
+  const handleEndDateTimePress = (mode: 'date' | 'time') => {
+    setEndPickerMode(mode);
+    setShowEndDropdown(true);
+    if (Platform.OS !== 'web') {
+      setShowEndPicker(true);
+    }
+  };
+
+  const renderLocationSuggestion = ({ item }: { item: LocationSuggestion }) => (
+    <TouchableOpacity
+      style={styles.suggestionItem}
+      onPress={() => handleLocationSuggestionPress(item)}
+    >
+      <View style={styles.suggestionIcon}>
+        <MapPin size={16} color="#6B7280" />
+      </View>
+      <View style={styles.suggestionContent}>
+        <Text style={styles.suggestionName}>{item.name}</Text>
+        <Text style={styles.suggestionAddress}>{item.address}</Text>
+      </View>
+      <View style={[styles.suggestionType, 
+        item.type === 'popular' && styles.suggestionTypePopular,
+        item.type === 'recent' && styles.suggestionTypeRecent,
+        item.type === 'nearby' && styles.suggestionTypeNearby
+      ]}>
+        <Text style={[styles.suggestionTypeText,
+          item.type === 'popular' && styles.suggestionTypeTextPopular,
+          item.type === 'recent' && styles.suggestionTypeTextRecent,
+          item.type === 'nearby' && styles.suggestionTypeTextNearby
+        ]}>
+          {item.type}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.greeting}>Hello, Ananya!!</Text>
@@ -246,9 +325,10 @@ export default function HomeScreen() {
             <TextInput
               style={styles.locationInput}
               value={location}
-              onChangeText={setLocation}
+              onChangeText={handleLocationChange}
               placeholder="Location"
               placeholderTextColor="#9CA3AF"
+              onFocus={() => setShowLocationSuggestions(location.length > 0)}
             />
             <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress}>
               <MapPin size={20} color="#6B7280" />
@@ -257,23 +337,47 @@ export default function HomeScreen() {
               <Mic size={20} color="#6B7280" />
             </TouchableOpacity>
           </View>
+
+          {/* Location Suggestions */}
+          {showLocationSuggestions && (
+            <View style={styles.suggestionsContainer}>
+              <FlatList
+                data={filteredSuggestions}
+                renderItem={renderLocationSuggestion}
+                keyExtractor={(item) => item.id}
+                style={styles.suggestionsList}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              />
+            </View>
+          )}
         </View>
 
-        {/* Date and Time Selection */}
+        {/* Date and Time Selection with Dropdowns */}
         <View style={styles.dateTimeContainer}>
           <View style={styles.dateTimeSection}>
             <Text style={styles.dateTimeLabel}>Trip Start</Text>
             <View style={styles.dateTimeRow}>
               <TouchableOpacity 
-                style={styles.dateTimeButton}
-                onPress={() => {
-                  setStartPickerMode('date');
-                  setShowStartPicker(true);
-                }}
+                style={[styles.dateTimeDropdown, { flex: 1, marginRight: 8 }]}
+                onPress={() => handleStartDateTimePress('date')}
               >
+                <Calendar size={16} color="#000000" />
                 <Text style={styles.dateTimeText}>
-                  {formatDateTime(tripStart, 'date')}, {formatDateTime(tripStart, 'time')}
+                  {formatDateTime(tripStart, 'date')}
                 </Text>
+                <ChevronDown size={16} color="#000000" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.dateTimeDropdown, { flex: 1, marginLeft: 8 }]}
+                onPress={() => handleStartDateTimePress('time')}
+              >
+                <Clock size={16} color="#000000" />
+                <Text style={styles.dateTimeText}>
+                  {formatDateTime(tripStart, 'time')}
+                </Text>
+                <ChevronDown size={16} color="#000000" />
               </TouchableOpacity>
             </View>
           </View>
@@ -282,15 +386,25 @@ export default function HomeScreen() {
             <Text style={styles.dateTimeLabel}>Trip End</Text>
             <View style={styles.dateTimeRow}>
               <TouchableOpacity 
-                style={styles.dateTimeButton}
-                onPress={() => {
-                  setEndPickerMode('date');
-                  setShowEndPicker(true);
-                }}
+                style={[styles.dateTimeDropdown, { flex: 1, marginRight: 8 }]}
+                onPress={() => handleEndDateTimePress('date')}
               >
+                <Calendar size={16} color="#000000" />
                 <Text style={styles.dateTimeText}>
-                  {formatDateTime(tripEnd, 'date')}, {formatDateTime(tripEnd, 'time')}
+                  {formatDateTime(tripEnd, 'date')}
                 </Text>
+                <ChevronDown size={16} color="#000000" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.dateTimeDropdown, { flex: 1, marginLeft: 8 }]}
+                onPress={() => handleEndDateTimePress('time')}
+              >
+                <Clock size={16} color="#000000" />
+                <Text style={styles.dateTimeText}>
+                  {formatDateTime(tripEnd, 'time')}
+                </Text>
+                <ChevronDown size={16} color="#000000" />
               </TouchableOpacity>
             </View>
           </View>
@@ -345,7 +459,7 @@ export default function HomeScreen() {
             minimumDate={tripStart}
           />
         )}
-      </ScrollView>
+      </View>
 
       {/* Sliding Menu Modal */}
       <Modal
@@ -377,7 +491,7 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.menuContent}>
                   {menuItems.map((item) => (
                     <TouchableOpacity
                       key={item.id}
@@ -390,7 +504,7 @@ export default function HomeScreen() {
                       <Text style={styles.menuItemText}>{item.title}</Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
+                </View>
               </Animated.View>
             </TouchableWithoutFeedback>
           </View>
@@ -405,12 +519,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  scrollView: {
+  content: {
     flex: 1,
-  },
-  scrollContent: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -439,6 +550,7 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     marginBottom: 32,
+    position: 'relative',
   },
   locationInputContainer: {
     flexDirection: 'row',
@@ -473,6 +585,82 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 4,
   },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginTop: 8,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1000,
+    maxHeight: 300,
+  },
+  suggestionsList: {
+    maxHeight: 300,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  suggestionIcon: {
+    marginRight: 12,
+    width: 20,
+    alignItems: 'center',
+  },
+  suggestionContent: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  suggestionAddress: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  suggestionType: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  suggestionTypePopular: {
+    backgroundColor: '#FEF3C7',
+  },
+  suggestionTypeRecent: {
+    backgroundColor: '#DBEAFE',
+  },
+  suggestionTypeNearby: {
+    backgroundColor: '#D1FAE5',
+  },
+  suggestionTypeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  suggestionTypeTextPopular: {
+    color: '#92400E',
+  },
+  suggestionTypeTextRecent: {
+    color: '#1E40AF',
+  },
+  suggestionTypeTextNearby: {
+    color: '#065F46',
+  },
   dateTimeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -492,11 +680,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  dateTimeButton: {
-    flex: 1,
+  dateTimeDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 16,
     shadowColor: '#000000',
     shadowOffset: {
@@ -506,11 +696,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    gap: 8,
   },
   dateTimeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000', // Changed to black for better visibility
+    color: '#000000', // Black font for better visibility
+    flex: 1,
+    textAlign: 'center',
   },
   vehicleContainer: {
     flexDirection: 'row',
