@@ -67,6 +67,33 @@ export default function TabLayout() {
           href: null, // Hide from tab bar but keep accessible via navigation
         }}
       />
+      <Tabs.Screen
+        name="bike-details"
+        options={{
+          title: 'Bike Details',
+          tabBarIcon: ({ size, color }) => (
+            <Bike size={size} color={color} />
+          ),
+          href: null, // Hide from tab bar but keep accessible via navigation
+        }}
+      />
+      <Tabs.Screen
+        name="cycle-details"
+        options={{
+          title: 'Cycle Details',
+          tabBarIcon: ({ size, color }) => (
+            <Bicycle size={size} color={color} />
+          ),
+          href: null, // Hide from tab bar but keep accessible via navigation
+        }}
+      />
+      <Tabs.Screen
+        name="payment"
+        options={{
+          title: 'Payment',
+          href: null, // Hide from tab bar but keep accessible via navigation
+        }}
+      />
     </Tabs>
   );
 }
