@@ -397,46 +397,6 @@ export default function HomeScreen() {
                   <ChevronDown size={18} color="#000000" style={styles.dropdownIcon} />
                 )}
               </TouchableOpacity>
-              
-              {/* Date/Time Picker positioned right below Trip Start button */}
-              {showStartPicker && Platform.OS !== 'web' && (
-                <View style={styles.pickerContainer}>
-                  <View style={styles.pickerHeader}>
-                    <Text style={styles.pickerTitle}>Select Date & Time</Text>
-                    <TouchableOpacity 
-                      style={styles.pickerCloseButton} 
-                      onPress={closeStartPicker}
-                    >
-                      <X size={20} color="#000000" />
-                    </TouchableOpacity>
-                  </View>
-                  <DateTimePicker
-                    value={tripStart}
-                    mode={startPickerMode}
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
-                    minimumDate={new Date()}
-                    textColor="#000000"
-                    accentColor="#059669"
-                  />
-                  {Platform.OS === 'ios' && (
-                    <View style={styles.pickerButtons}>
-                      <TouchableOpacity 
-                        style={styles.pickerButton} 
-                        onPress={closeStartPicker}
-                      >
-                        <Text style={styles.pickerButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.pickerButton, styles.confirmButton]} 
-                        onPress={closeStartPicker}
-                      >
-                        <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              )}
             </View>
 
             <View style={styles.dateTimeSection}>
@@ -454,48 +414,87 @@ export default function HomeScreen() {
                   <ChevronDown size={18} color="#000000" style={styles.dropdownIcon} />
                 )}
               </TouchableOpacity>
-              
-              {/* Date/Time Picker positioned right below Trip End button */}
-              {showEndPicker && Platform.OS !== 'web' && (
-                <View style={styles.pickerContainer}>
-                  <View style={styles.pickerHeader}>
-                    <Text style={styles.pickerTitle}>Select Date & Time</Text>
-                    <TouchableOpacity 
-                      style={styles.pickerCloseButton} 
-                      onPress={closeEndPicker}
-                    >
-                      <X size={20} color="#000000" />
-                    </TouchableOpacity>
-                  </View>
-                  <DateTimePicker
-                    value={tripEnd}
-                    mode={endPickerMode}
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
-                    minimumDate={tripStart}
-                    textColor="#000000"
-                    accentColor="#059669"
-                  />
-                  {Platform.OS === 'ios' && (
-                    <View style={styles.pickerButtons}>
-                      <TouchableOpacity 
-                        style={styles.pickerButton} 
-                        onPress={closeEndPicker}
-                      >
-                        <Text style={styles.pickerButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.pickerButton, styles.confirmButton]} 
-                        onPress={closeEndPicker}
-                      >
-                        <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
+            </View>
+          </View>
+
+          {/* Date/Time Pickers positioned below the entire date/time container */}
+          {showStartPicker && Platform.OS !== 'web' && (
+            <View style={styles.pickerContainerFullWidth}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Date & Time</Text>
+                <TouchableOpacity 
+                  style={styles.pickerCloseButton} 
+                  onPress={closeStartPicker}
+                >
+                  <X size={20} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={tripStart}
+                mode={startPickerMode}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
+                minimumDate={new Date()}
+                textColor="#000000"
+                accentColor="#059669"
+              />
+              {Platform.OS === 'ios' && (
+                <View style={styles.pickerButtons}>
+                  <TouchableOpacity 
+                    style={styles.pickerButton} 
+                    onPress={closeStartPicker}
+                  >
+                    <Text style={styles.pickerButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.pickerButton, styles.confirmButton]} 
+                    onPress={closeStartPicker}
+                  >
+                    <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
-          </View>
+          )}
+
+          {showEndPicker && Platform.OS !== 'web' && (
+            <View style={styles.pickerContainerFullWidth}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Date & Time</Text>
+                <TouchableOpacity 
+                  style={styles.pickerCloseButton} 
+                  onPress={closeEndPicker}
+                >
+                  <X size={20} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={tripEnd}
+                mode={endPickerMode}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
+                minimumDate={tripStart}
+                textColor="#000000"
+                accentColor="#059669"
+              />
+              {Platform.OS === 'ios' && (
+                <View style={styles.pickerButtons}>
+                  <TouchableOpacity 
+                    style={styles.pickerButton} 
+                    onPress={closeEndPicker}
+                  >
+                    <Text style={styles.pickerButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.pickerButton, styles.confirmButton]} 
+                    onPress={closeEndPicker}
+                  >
+                    <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Vehicle Selection */}
           <View style={styles.vehicleContainer}>
@@ -767,17 +766,16 @@ const styles = StyleSheet.create({
     top: '50%',
     marginTop: -9,
   },
-  // Date/Time Picker positioned below dropdown
-  pickerContainer: {
+  // Date/Time Picker positioned below the entire date/time container with full width
+  pickerContainerFullWidth: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
+    top: 220, // Position below the date/time container
+    left: 24,
+    right: 24,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 12,
-    marginTop: 8,
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
