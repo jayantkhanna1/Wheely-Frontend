@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, Car, Bike, Bicycle } from 'lucide-react-native';
+import { Chrome as Home, Car, Bike, Recycle as Bicycle } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
