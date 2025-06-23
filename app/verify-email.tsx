@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
 
 export default function VerifyEmailScreen() {
@@ -36,6 +37,26 @@ export default function VerifyEmailScreen() {
   const handleKeyPress = (key: string, index: number) => {
     if (key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const storeUserData = async (userData) => {
+    try {
+      await AsyncStorage.multiSet([
+        ['user_id', userData.id.toString()],
+        ['private_token', userData.private_token],
+        ['user_data', JSON.stringify(userData)],
+        ['first_name', userData.first_name || ''],
+        ['last_name', userData.last_name || ''],
+        ['email', userData.email || ''],
+        ['phone', userData.phone || ''],
+        ['email_verified', userData.email_verified ? 'true' : 'false'],
+        ['phone_verified', userData.phone_verified ? 'true' : 'false'],
+        ['driving_license_verified', userData.driving_license_verified ? 'true' : 'false'],
+      ]);
+      console.log('User data stored successfully after email verification');
+    } catch (error) {
+      console.error('Error storing user data:', error);
     }
   };
 
@@ -75,6 +96,20 @@ export default function VerifyEmailScreen() {
 
       if (response.ok && (data.message === "Email verified successfully" || data.success === true)) {
         showToast('Email verified successfully!', 'success');
+        
+        // Store user data if it's returned in the response
+        if (data.user) {
+          console.log('Storing user data from verification response');
+          await storeUserData(data.user);
+        } else if (data.data && data.data.user) {
+          console.log('Storing user data from verification response (nested)');
+          await storeUserData(data.data.user);
+        } else {
+          console.log('No user data in verification response, checking for stored data');
+          // If no user data in response, try to get it from storage if available
+          // This is a fallback in case the API doesn't return full user data
+        }
+        
         setTimeout(() => {
           router.replace('/(tabs)');
         }, 1500);

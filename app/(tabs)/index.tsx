@@ -1,9 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback, FlatList } from 'react-native';
 import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, ChevronDown, ChevronUp } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { HeaderWithProfile } from '../../components/HeaderWithProfile';
+import { SlideMenu } from '../../components/SlideMenu';
+// import * as Location from 'expo-location'; // uncomment when youn join google for location services
+
+// const GOOGLE_PLACES_API_KEY = 'YOUR_GOOGLE_PLACES_API_KEY';
+
 
 interface VehicleOption {
   id: string;
@@ -25,6 +32,18 @@ interface LocationSuggestion {
   type: 'popular' | 'recent' | 'nearby';
 }
 
+interface UserData {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  private_token: string;
+  email_verified: boolean;
+  phone_verified: boolean;
+  driving_license_verified: boolean;
+}
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function HomeScreen() {
@@ -39,6 +58,26 @@ export default function HomeScreen() {
   const [showMenu, setShowMenu] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
 
   // Sample location suggestions
   const locationSuggestions: LocationSuggestion[] = [
@@ -88,57 +127,6 @@ export default function HomeScreen() {
     }
   ];
 
-  const menuItems: MenuItem[] = [
-    {
-      id: 'trips',
-      title: 'My Trips',
-      icon: <MapIcon size={20} color="#374151" />,
-      onPress: () => console.log('My Trips pressed')
-    },
-    {
-      id: 'contact',
-      title: 'Contact Us',
-      icon: <Phone size={20} color="#374151" />,
-      onPress: () => console.log('Contact Us pressed')
-    },
-    {
-      id: 'profile',
-      title: 'My Profile',
-      icon: <User size={20} color="#374151" />,
-      onPress: () => console.log('My Profile pressed')
-    },
-    {
-      id: 'rewards',
-      title: 'Rewards',
-      icon: <Gift size={20} color="#374151" />,
-      onPress: () => console.log('Rewards pressed')
-    },
-    {
-      id: 'offers',
-      title: 'Offers',
-      icon: <Percent size={20} color="#374151" />,
-      onPress: () => console.log('Offers pressed')
-    },
-    {
-      id: 'helpline',
-      title: 'Helpline Support',
-      icon: <HelpCircle size={20} color="#374151" />,
-      onPress: () => console.log('Helpline Support pressed')
-    },
-    {
-      id: 'policies',
-      title: 'Policies',
-      icon: <FileText size={20} color="#374151" />,
-      onPress: () => console.log('Policies pressed')
-    },
-    {
-      id: 'language',
-      title: 'Language',
-      icon: <Globe size={20} color="#374151" />,
-      onPress: () => console.log('Language pressed')
-    }
-  ];
-
   const formatDateTime = (date: Date, type: 'date' | 'time') => {
     if (type === 'date') {
       return date.toLocaleDateString('en-US', {
@@ -167,7 +155,7 @@ export default function HomeScreen() {
     return `${dateStr}, ${timeStr}`;
   };
 
-  const handleDateTimeChange = (event: any, selectedDate?: Date, type: 'start' | 'end', mode: 'date' | 'time') => {
+  const handleDateTimeChange = (event: any, selectedDate?: Date, type?: 'start' | 'end', mode?: 'date' | 'time') => {
     if (Platform.OS === 'android') {
       // Don't close picker immediately on Android for better UX
     }
@@ -243,10 +231,6 @@ export default function HomeScreen() {
   const handleLocationSuggestionPress = (suggestion: LocationSuggestion) => {
     setLocation(suggestion.name);
     setShowLocationSuggestions(false);
-  };
-
-  const getUserInitials = () => {
-    return 'AV'; // Ananya's initials as shown in the design
   };
 
   const openMenu = () => {
@@ -355,12 +339,10 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.greeting}>Hello, Ananya!!</Text>
-            <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-              <Text style={styles.profileText}>{getUserInitials()}</Text>
-            </TouchableOpacity>
-          </View>
+          <HeaderWithProfile 
+            userData={userData} 
+            onProfilePress={openMenu}
+          />
 
           {/* Location Search */}
           <View style={styles.locationContainer}>
@@ -591,55 +573,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Sliding Menu Modal */}
-        <Modal
+        <SlideMenu
           visible={showMenu}
-          transparent={true}
-          animationType="none"
-          onRequestClose={closeMenu}
-        >
-          <TouchableWithoutFeedback onPress={closeMenu}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback>
-                <Animated.View 
-                  style={[
-                    styles.slideMenu,
-                    {
-                      transform: [{ translateX: slideAnim }]
-                    }
-                  ]}
-                >
-                  <View style={styles.menuHeader}>
-                    <View style={styles.menuProfileSection}>
-                      <View style={styles.menuProfileIcon}>
-                        <Text style={styles.menuProfileText}>{getUserInitials()}</Text>
-                      </View>
-                      <Text style={styles.menuProfileName}>Ananya</Text>
-                    </View>
-                    <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
-                      <X size={20} color="#374151" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.menuContent}>
-                    {menuItems.map((item) => (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={styles.menuItem}
-                        onPress={() => handleMenuItemPress(item)}
-                      >
-                        <View style={styles.menuItemIcon}>
-                          {item.icon}
-                        </View>
-                        <Text style={styles.menuItemText}>{item.title}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </Animated.View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
+          onClose={closeMenu}
+          userData={userData}
+          setUserData={setUserData}
+        />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );

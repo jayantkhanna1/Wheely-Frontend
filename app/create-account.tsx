@@ -7,7 +7,7 @@ export default function CreateAccountScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push('/')} style={styles.backButton}>
           <ArrowLeft size={20} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create new account</Text>

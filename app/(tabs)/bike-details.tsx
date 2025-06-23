@@ -1,13 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  SafeAreaView, 
-  Image, 
-  Modal, 
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  Image,
+  Modal,
   Animated,
   Dimensions,
   TextInput,
@@ -17,6 +17,20 @@ import { ArrowLeft, MapPin, Calendar, Clock, Star, Share2, X, ChevronDown, Chevr
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SlideMenu } from '../../components/SlideMenu';
+
+interface UserData {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  private_token: string;
+  email_verified: boolean;
+  phone_verified: boolean;
+  driving_license_verified: boolean;
+}
 
 interface MenuItem {
   id: string;
@@ -57,6 +71,27 @@ export default function BikeDetailsScreen() {
   const [activeTab, setActiveTab] = useState('Photos');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
   const [faqs, setFaqs] = useState<FAQ[]>([
     {
       id: '1',
@@ -214,7 +249,7 @@ export default function BikeDetailsScreen() {
     }
   };
 
-  const handleDateTimeChange = (event: any, selectedDate?: Date, type: 'start' | 'end', mode: 'date' | 'time') => {
+  const handleDateTimeChange = (event: any, selectedDate?: Date, type?: 'start' | 'end', mode?: 'date' | 'time') => {
     if (Platform.OS === 'android') {
       setShowStartPicker(false);
       setShowEndPicker(false);
@@ -296,8 +331,8 @@ export default function BikeDetailsScreen() {
   };
 
   const toggleFAQ = (faqId: string) => {
-    setFaqs(prev => prev.map(faq => 
-      faq.id === faqId 
+    setFaqs(prev => prev.map(faq =>
+      faq.id === faqId
         ? { ...faq, expanded: !faq.expanded }
         : faq
     ));
@@ -389,7 +424,7 @@ export default function BikeDetailsScreen() {
                 </View>
               </View>
             </View>
-            
+
             {reviews.map((item) => (
               <View key={item.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
@@ -471,11 +506,11 @@ export default function BikeDetailsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.push('/bike-selection')} style={styles.backButton}>
           <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>AV</Text>
+          <Text style={styles.profileText}>{userData?.first_name[0]}{userData?.last_name[0]}</Text>
         </TouchableOpacity>
       </View>
 
@@ -494,7 +529,7 @@ export default function BikeDetailsScreen() {
           </View>
 
           <View style={styles.dateTimeSection}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dateTimeItem}
               onPress={() => handleDateTimeEdit('start')}
             >
@@ -502,8 +537,8 @@ export default function BikeDetailsScreen() {
               <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
               <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.dateTimeItem}
               onPress={() => handleDateTimeEdit('end')}
             >
@@ -574,7 +609,7 @@ export default function BikeDetailsScreen() {
         {/* Policies Section */}
         <View style={styles.policiesContainer}>
           <Text style={styles.policiesTitle}>Policies and Agreement</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.policyItem}
             onPress={() => setIsAgreed(!isAgreed)}
           >
@@ -617,9 +652,9 @@ export default function BikeDetailsScreen() {
                 <X size={20} color="#000000" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modeToggleContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
                 onPress={() => setStartPickerMode('date')}
               >
@@ -628,7 +663,7 @@ export default function BikeDetailsScreen() {
                   Date
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
                 onPress={() => setStartPickerMode('time')}
               >
@@ -661,9 +696,9 @@ export default function BikeDetailsScreen() {
                 <X size={20} color="#000000" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modeToggleContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
                 onPress={() => setEndPickerMode('date')}
               >
@@ -672,7 +707,7 @@ export default function BikeDetailsScreen() {
                   Date
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
                 onPress={() => setEndPickerMode('time')}
               >
@@ -713,7 +748,7 @@ export default function BikeDetailsScreen() {
                     <X size={24} color="#000000" />
                   </TouchableOpacity>
                 </View>
-                
+
                 <View style={styles.locationEditContent}>
                   <TextInput
                     style={styles.locationEditInput}
@@ -722,15 +757,15 @@ export default function BikeDetailsScreen() {
                     placeholder="Enter location"
                     autoFocus={true}
                   />
-                  
+
                   <View style={styles.locationEditButtons}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.cancelButton}
                       onPress={() => setShowLocationEdit(false)}
                     >
                       <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.saveButton}
                       onPress={saveLocationEdit}
                     >
@@ -743,56 +778,12 @@ export default function BikeDetailsScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* Sliding Menu Modal */}
-      <Modal
-        visible={showMenu}
-        transparent={true}
-        animationType="none"
-        onRequestClose={closeMenu}
-      >
-        <TouchableWithoutFeedback onPress={closeMenu}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <Animated.View 
-                style={[
-                  styles.slideMenu,
-                  {
-                    transform: [{ translateX: menuSlideAnim }]
-                  }
-                ]}
-              >
-                <View style={styles.menuHeader}>
-                  <View style={styles.menuProfileSection}>
-                    <View style={styles.menuProfileIcon}>
-                      <Text style={styles.menuProfileText}>AV</Text>
-                    </View>
-                    <Text style={styles.menuProfileName}>Ananya</Text>
-                  </View>
-                  <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
-                    <X size={24} color="#374151" />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
-                  {menuItems.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.menuItem}
-                      onPress={() => handleMenuItemPress(item)}
-                    >
-                      <View style={styles.menuItemIcon}>
-                        {item.icon}
-                      </View>
-                      <Text style={styles.menuItemText}>{item.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      <SlideMenu
+                visible={showMenu}
+                onClose={closeMenu}
+                userData={userData}
+                setUserData={setUserData}
+              />
     </SafeAreaView>
   );
 }
@@ -800,6 +791,7 @@ export default function BikeDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop: 30,
     backgroundColor: '#F9FAFB',
   },
   header: {
@@ -1440,7 +1432,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
-  
+
   },
   locationEditContent: {
     padding: 20,

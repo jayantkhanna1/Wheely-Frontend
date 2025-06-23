@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 
 interface ToastProps {
@@ -9,7 +9,7 @@ interface ToastProps {
 }
 
 export default function Toast({ message, type, visible, onHide }: ToastProps) {
-  const opacity = new Animated.Value(0);
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
@@ -29,7 +29,7 @@ export default function Toast({ message, type, visible, onHide }: ToastProps) {
         onHide();
       });
     }
-  }, [visible]);
+  }, [visible, opacity, onHide]);
 
   if (!visible) return null;
 

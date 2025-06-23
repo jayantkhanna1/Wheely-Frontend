@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -18,6 +18,9 @@ import { ArrowLeft, MapPin, Calendar, Clock, Filter, ArrowUpDown, Star, Fuel, Us
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SlideMenu } from '../../components/SlideMenu';
+import { HeaderWithProfile } from '../../components/HeaderWithProfile';
 
 interface Bike {
   id: string;
@@ -32,6 +35,18 @@ interface Bike {
   price: number;
   image: string;
   features: string[];
+}
+
+interface UserData {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  private_token: string;
+  email_verified: boolean;
+  phone_verified: boolean;
+  driving_license_verified: boolean;
 }
 
 interface FilterOption {
@@ -74,6 +89,27 @@ export default function BikeSelectionScreen() {
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const sortSlideAnim = useRef(new Animated.Value(screenWidth)).current;
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
+
+  const [userData, setUserData] = useState<UserData | null>(null);
+  
+    useEffect(() => {
+      loadUserData();
+    }, []);
+  
+    const loadUserData = async () => {
+      try {
+        const storedUserData = await AsyncStorage.getItem('user_data');
+        if (storedUserData) {
+          const parsedUserData = JSON.parse(storedUserData);
+          setUserData(parsedUserData);
+          console.log('User data loaded:', parsedUserData);
+        } else {
+          console.log('No user data found in storage');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
 
   const [filters, setFilters] = useState<FilterOption[]>([
     { id: 'model2020+', label: 'Model 2020+', selected: true },
@@ -253,7 +289,7 @@ export default function BikeSelectionScreen() {
     }
   };
 
-  const handleDateTimeChange = (event: any, selectedDate?: Date, type: 'start' | 'end', mode: 'date' | 'time') => {
+  const handleDateTimeChange = (event: any, selectedDate?: Date, type?: 'start' | 'end', mode?: 'date' | 'time') => {
     if (Platform.OS === 'android') {
       setShowStartPicker(false);
       setShowEndPicker(false);
@@ -470,8 +506,9 @@ export default function BikeSelectionScreen() {
           <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>AV</Text>
+          <Text style={styles.profileText}>{userData?.first_name[0]}{userData?.last_name[0]}</Text>
         </TouchableOpacity>
+
       </View>
 
       {/* Trip Details - Editable */}
@@ -771,62 +808,19 @@ export default function BikeSelectionScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* Sliding Menu Modal */}
-      <Modal
-        visible={showMenu}
-        transparent={true}
-        animationType="none"
-        onRequestClose={closeMenu}
-      >
-        <TouchableWithoutFeedback onPress={closeMenu}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <Animated.View 
-                style={[
-                  styles.slideMenu,
-                  {
-                    transform: [{ translateX: menuSlideAnim }]
-                  }
-                ]}
-              >
-                <View style={styles.menuHeader}>
-                  <View style={styles.menuProfileSection}>
-                    <View style={styles.menuProfileIcon}>
-                      <Text style={styles.menuProfileText}>AV</Text>
-                    </View>
-                    <Text style={styles.menuProfileName}>Ananya</Text>
-                  </View>
-                  <TouchableOpacity style={styles.closeButton} onPress={closeMenu}>
-                    <X size={24} color="#374151" />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
-                  {menuItems.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.menuItem}
-                      onPress={() => handleMenuItemPress(item)}
-                    >
-                      <View style={styles.menuItemIcon}>
-                        {item.icon}
-                      </View>
-                      <Text style={styles.menuItemText}>{item.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      <SlideMenu
+          visible={showMenu}
+          onClose={closeMenu}
+          userData={userData}
+          setUserData={setUserData}
+        />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: 30,
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
