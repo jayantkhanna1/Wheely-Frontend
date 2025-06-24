@@ -1,199 +1,106 @@
-// AddVehicleScreen.tsx
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-} from 'react-native';
-import { ArrowLeft } from 'lucide-react-native';
-import { router } from 'expo-router';
 
-import { VehicleForm, DropdownOption } from '../../types/VehicleTypes';
-import Step1BasicInfo from '../../components/Step1BasicInfo';
-import Step2VehicleDetails from '../../components/Step2VehicleDetails';
-import Step3PricingLocation from '../../components/Step3PricingLocation';
-import Step4PhotosDocuments from '../../components/Step4PhotosDocuments';
-import Step5Availability from '../../components/Step5Availability';
+// components/Step2VehicleDetails.tsx
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { ChevronDown } from 'lucide-react-native';
+import { StepProps, DropdownOption, fuelTypes, transmissionTypes, seatingOptions, categoryOptions, availableFeatures } from '../types/VehicleTypes';
 
-const AddVehicleScreen: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<VehicleForm>({
-    brand: '',
-    make: '',
-    model: '',
-    year: '',
-    color: '',
-    licensePlate: '',
-    fuelType: '',
-    transmission: '',
-    seatingCapacity: '',
-    category: '',
-    pricePerDay: '',
-    pricePerHour: '',
-    address: '',
-    street: '',
-    city: '',
-    state: '',
-    country: '',
-    features: [],
-    images: [],
-    rcDocument: null,
-    insuranceDocument: null,
-    pucDocument: null,
-    availability: null, // Add availability field
-  });
+const Step2VehicleDetails: React.FC<StepProps> = ({ formData, updateFormData, showDropdown, setShowDropdown }) => {
+  const renderDropdown = (
+    field: keyof typeof formData,
+    options: DropdownOption[],
+    placeholder: string
+  ) => (
+    <View style={styles.inputContainer}>
+      <TouchableOpacity
+        style={styles.dropdownButton}
+        onPress={() => setShowDropdown(showDropdown === field ? null : field)}
+      >
+        <Text style={[styles.dropdownText, !formData[field] && styles.placeholderText]}>
+          {formData[field] ? options.find(opt => opt.value === formData[field])?.label : placeholder}
+        </Text>
+        <ChevronDown size={20} color="#6B7280" />
+      </TouchableOpacity>
 
-  const totalSteps = 5; // Updated to 5 steps
+      {showDropdown === field && (
+        <ScrollView style={styles.dropdownList} nestedScrollEnabled>
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={styles.dropdownItem}
+              onPress={() => {
+                updateFormData(field, option.value);
+                setShowDropdown(null);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>{option.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
 
-  const updateFormData = (field: keyof VehicleForm, value: string | string[] | any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const validateStep = (step: number): boolean => {
-    switch (step) {
-      case 1:
-        return !!(formData.brand && formData.make && formData.model && formData.year && formData.color && formData.licensePlate);
-      case 2:
-        return !!(formData.fuelType && formData.transmission && formData.seatingCapacity && formData.category);
-      case 3:
-        return !!(formData.pricePerDay && formData.pricePerHour && formData.address && formData.city && formData.state && formData.country);
-      case 4:
-        return formData.images.length >= 1; // At least 1 image required
-      case 5:
-        // Validate availability step
-        if (!formData.availability) return false;
-        const availability = formData.availability;
-        if (availability.availabilityType === 'specific-dates') {
-          return availability.specificDates && availability.specificDates.length > 0;
-        } else if (availability.availabilityType === 'recurring-days') {
-          return availability.recurringDays && availability.recurringDays.length > 0;
-        }
-        return false;
-      default:
-        return false;
-    }
-  };
-
-  const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
-    } else {
-      Alert.alert('Incomplete Information', 'Please fill all required fields before proceeding.');
-    }
-  };
-
-  const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-
-  const handleBackPress = () => {
-    if (currentStep > 1) {
-      prevStep();
-    } else {
-      router.push('/host');
-    }
-  };
-
-  const submitForm = () => {
-    if (validateStep(5)) { // Updated to validate step 5
-      Alert.alert(
-        'Submit Vehicle',
-        'Your vehicle will be reviewed and activated within 24-48 hours.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Submit',
-            onPress: () => {
-              console.log('Submitting vehicle data:', formData);
-              // Here you would typically make an API call to submit the data
-              router.back();
-            }
-          },
-        ]
-      );
-    } else {
-      Alert.alert('Incomplete Information', 'Please complete all required steps.');
-    }
-  };
-
-  const renderCurrentStep = () => {
-    const stepProps = {
-      formData,
-      updateFormData,
-      showDropdown,
-      setShowDropdown,
-    };
-
-    switch (currentStep) {
-      case 1:
-        return <Step1BasicInfo {...stepProps} />;
-      case 2:
-        return <Step2VehicleDetails {...stepProps} />;
-      case 3:
-        return <Step3PricingLocation {...stepProps} />;
-      case 4:
-        return <Step4PhotosDocuments {...stepProps} />;
-      case 5:
-        return <Step5Availability formData={formData} updateFormData={updateFormData} />;
-      default:
-        return null;
-    }
+  const toggleFeature = (feature: string) => {
+    const updatedFeatures = formData.features.includes(feature)
+      ? formData.features.filter(f => f !== feature)
+      : [...formData.features, feature];
+    updateFormData('features', updatedFeatures);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <ArrowLeft size={20} color="#374151" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Vehicle</Text>
-        <View style={styles.placeholder} />
+    <View style={styles.stepContent}>
+      <Text style={styles.stepTitle}>Vehicle Details</Text>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Fuel Type *</Text>
+        {renderDropdown('fuelType', fuelTypes, 'Select fuel type')}
       </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(currentStep / totalSteps) * 100}%` }]} />
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Transmission *</Text>
+        {renderDropdown('transmission', transmissionTypes, 'Select transmission')}
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Seating Capacity *</Text>
+        {renderDropdown('seatingCapacity', seatingOptions, 'Select seating capacity')}
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Category *</Text>
+        {renderDropdown('category', categoryOptions, 'Select vehicle category')}
+      </View>
+
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Features</Text>
+        <View style={styles.featuresContainer}>
+          {availableFeatures.map((feature) => (
+            <TouchableOpacity
+              key={feature}
+              style={[
+                styles.featureChip,
+                formData.features.includes(feature) && styles.featureChipSelected
+              ]}
+              onPress={() => toggleFeature(feature)}
+            >
+              <Text style={[
+                styles.featureChipText,
+                formData.features.includes(feature) && styles.featureChipTextSelected
+              ]}>
+                {feature}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
-        <Text style={styles.progressText}>Step {currentStep} of {totalSteps}</Text>
       </View>
-
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {renderCurrentStep()}
-      </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        {currentStep > 1 && (
-          <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
-            <Text style={styles.secondaryButtonText}>Previous</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={[styles.primaryButton, currentStep === 1 && styles.fullWidthButton]}
-          onPress={currentStep === totalSteps ? submitForm : nextStep}
-        >
-          <Text style={styles.primaryButtonText}>
-            {currentStep === totalSteps ? 'Submit Vehicle' : 'Next'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
+
+export default Step2VehicleDetails;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -522,5 +429,3 @@ const styles = StyleSheet.create({
     marginTop: 2,
   }
 });
-
-export default AddVehicleScreen;
