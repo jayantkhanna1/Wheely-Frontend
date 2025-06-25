@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
-import { StepProps, DropdownOption, brandOptions, vehicleTypeOptions } from '../types/VehicleTypes';
+import { StepProps, DropdownOption, brandOptions } from '../types/BicycleTypes';
 
 
 const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDropdown, setShowDropdown }) => {
@@ -46,13 +46,18 @@ const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDro
       <Text style={styles.stepTitle}>Basic Vehicle Information</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Type *</Text>
-        {renderDropdown('vehicleType', vehicleTypeOptions, 'Select vehicle Type')}
+        <Text style={styles.label}>Vehicle Brand *</Text>
+        {renderDropdown('brand', brandOptions, 'Select vehicle brand')}
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Brand *</Text>
-        {renderDropdown('brand', brandOptions, 'Select vehicle brand')}
+        <Text style={styles.label}>Vehicle Make *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g., Honda, Maruti, Toyota"
+          value={formData.make}
+          onChangeText={(text) => updateFormData('make', text)}
+        />
       </View>
 
       <View style={styles.inputContainer}>
@@ -86,17 +91,6 @@ const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDro
             onChangeText={(text) => updateFormData('color', text)}
           />
         </View>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>License Plate Number *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="MH01AB1234"
-          value={formData.licensePlate}
-          onChangeText={(text) => updateFormData('licensePlate', text.toUpperCase())}
-          autoCapitalize="characters"
-        />
       </View>
     </View>
   );

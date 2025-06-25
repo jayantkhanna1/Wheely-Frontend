@@ -2,11 +2,11 @@
 export interface VehicleForm {
   // Basic Information
   brand: string;
-  make: string;
   model: string;
   year: string;
   color: string;
   licensePlate: string;
+  vehicleType: string;
   
   // Vehicle Details
   fuelType: string;
@@ -25,7 +25,8 @@ export interface VehicleForm {
   city: string;
   state: string;
   country: string;
-  
+  pincode: string;
+
   // Features
   features: string[];
   
@@ -47,6 +48,12 @@ export interface StepProps {
   showDropdown: string | null;
   setShowDropdown: (value: string | null) => void;
 }
+
+export const vehicleTypeOptions: DropdownOption[] = [
+  { label: '2 Wheeler', value: '2_wheeler' },
+  { label: '4 Wheeler', value: '4_wheeler' },
+  { label: 'Other', value: 'Other' },
+];
 
 // Dropdown options
 export const brandOptions: DropdownOption[] = [

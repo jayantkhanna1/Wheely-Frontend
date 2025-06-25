@@ -18,6 +18,7 @@ import Step2VehicleDetails from '../../components/Step2VehicleDetails';
 import Step3PricingLocation from '../../components/Step3PricingLocation';
 import Step4PhotosDocuments from '../../components/Step4PhotosDocuments';
 import Step5Availability from '../../components/Step5Availability';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddVehicleScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -25,11 +26,11 @@ const AddVehicleScreen: React.FC = () => {
 
   const [formData, setFormData] = useState<VehicleForm>({
     brand: '',
-    make: '',
     model: '',
     year: '',
     color: '',
     licensePlate: '',
+    vehicleType: '',
     fuelType: '',
     transmission: '',
     seatingCapacity: '',
@@ -39,6 +40,7 @@ const AddVehicleScreen: React.FC = () => {
     address: '',
     street: '',
     city: '',
+    pincode: '',
     state: '',
     country: '',
     features: [],
@@ -61,7 +63,7 @@ const AddVehicleScreen: React.FC = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.brand && formData.make && formData.model && formData.year && formData.color && formData.licensePlate);
+        return !!(formData.brand && formData.model && formData.year && formData.color && formData.licensePlate);
       case 2:
         return !!(formData.fuelType && formData.transmission && formData.seatingCapacity && formData.category);
       case 3:
@@ -102,9 +104,12 @@ const AddVehicleScreen: React.FC = () => {
       router.push('/host');
     }
   };
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
 
-  const submitForm = () => {
-    if (validateStep(5)) { // Updated to validate step 5
+  const submitForm = async () => {
+    if (validateStep(5)) {
       Alert.alert(
         'Submit Vehicle',
         'Your vehicle will be reviewed and activated within 24-48 hours.',
@@ -112,10 +117,194 @@ const AddVehicleScreen: React.FC = () => {
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Submit',
-            onPress: () => {
-              console.log('Submitting vehicle data:', formData);
-              // Here you would typically make an API call to submit the data
-              router.back();
+            onPress: async () => {
+              try {
+                console.log('Submitting vehicle data:', formData);
+
+                // Create FormData for multipart/form-data request
+                const submitData = new FormData();
+                const userData = await AsyncStorage.getItem('user_data');
+                console.log('User data:', userData);
+                const user = userData ? JSON.parse(userData) : null;
+                const owner_id = user ? user.id : null;
+
+                // Map and append basic vehicle information
+                submitData.append('owner_id', owner_id?.toString() || '');
+                submitData.append('vehicle_name', `${formData.brand} ${formData.model}`);
+                submitData.append('vehicle_brand', formData.brand);
+                submitData.append('vehicle_model', formData.model);
+                submitData.append('vehicle_color', formData.color);
+                submitData.append('vehicle_year', formData.year?.toString() || '');
+                submitData.append('vehicle_type', formData.vehicleType);
+                submitData.append('transmission_type', formData.transmission);
+                submitData.append('fuel_type', formData.fuelType);
+                submitData.append('seating_capacity', formData.seatingCapacity?.toString() || '');
+                submitData.append('price_per_hour', parseFloat(formData.pricePerHour || "0").toFixed(2));
+                submitData.append('price_per_day', parseFloat(formData.pricePerDay || "0").toFixed(2));
+
+                // Map location data - send as JSON string
+                const locationData = {
+                  address: `${formData.address || ''}, ${formData.street || ''}, ${formData.city || ''}`.replace(/^,\s*|,\s*$/g, ''),
+                  street: formData.street || '',
+                  colony: formData.address || '',
+                  road: formData.street || '',
+                  pincode: formData.pincode || '',
+                  city: formData.city || '',
+                  state: formData.state || '',
+                  country: formData.country || '',
+                  google_map_location: ""
+                };
+                submitData.append('location', JSON.stringify(locationData));
+
+                // Map availability slots
+                const availabilitySlots: any[] = [];
+
+                if (formData.availability?.availabilityType === 'recurring-days') {
+                  const today = new Date();
+                  const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
+
+                  formData.availability.recurringDays?.forEach((day: string) => {
+                    const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
+                    const targetDate = new Date(startOfWeek);
+                    targetDate.setDate(startOfWeek.getDate() + dayIndex);
+
+                    if (formData.availability.isAllDay) {
+                      availabilitySlots.push({
+                        start_date: targetDate.toISOString().split('T')[0],
+                        end_date: targetDate.toISOString().split('T')[0],
+                        start_time: "00:00:00",
+                        end_time: "23:59:59",
+                        is_available: true
+                      });
+                    } else {
+                      formData.availability.timeSlots?.forEach((slot: { day: string; startTime: string; endTime: string; }) => {
+                        if (slot.day === day) {
+                          availabilitySlots.push({
+                            start_date: targetDate.toISOString().split('T')[0],
+                            end_date: targetDate.toISOString().split('T')[0],
+                            start_time: slot.startTime,
+                            end_time: slot.endTime,
+                            is_available: true
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+
+                if (availabilitySlots.length > 0) {
+                  submitData.append('availability_slots', JSON.stringify(availabilitySlots));
+                }
+                const categ= capitalizeFirst(formData.category) || '';
+                submitData.append('is_available', 'true');
+                submitData.append('category', categ);
+                submitData.append('license_plate', formData.licensePlate || '');
+                submitData.append('features', JSON.stringify(formData.features || []));
+
+                // Handle file uploads - Check if documents exist and are valid
+                if (formData.rcDocument?.uri) {
+                  try {
+                    // In React Native, append the file object directly without converting to blob
+                    submitData.append('vehicle_rc', {
+                      uri: formData.rcDocument.uri,
+                      type: formData.rcDocument.mimeType || 'application/pdf',
+                      name: formData.rcDocument.name || 'rc_document.pdf',
+                    } as any);
+                  } catch (error) {
+                    console.error('Error processing RC document:', error);
+                  }
+                }
+
+                if (formData.insuranceDocument?.uri) {
+                  try {
+                    // In React Native, append the file object directly without converting to blob
+                    submitData.append('vehicle_insurance', {
+                      uri: formData.insuranceDocument.uri,
+                      type: formData.insuranceDocument.mimeType || 'application/pdf',
+                      name: formData.insuranceDocument.name || 'insurance_document.pdf',
+                    } as any);
+                  } catch (error) {
+                    console.error('Error processing insurance document:', error);
+                  }
+                }
+
+                if (formData.pucDocument?.uri) {
+                  try {
+                    submitData.append('vehicle_pollution_certificate', {
+                      uri: formData.pucDocument.uri,
+                      type: formData.pucDocument.mimeType || 'application/pdf',
+                      name: formData.pucDocument.name || 'puc_document.pdf',
+                    } as any);
+                  } catch (error) {
+                    console.error('Error processing PUC document:', error);
+                  }
+                }
+
+                // Handle photos - React Native approach
+                if (formData.images && formData.images.length > 0) {
+                  for (let index = 0; index < formData.images.length; index++) {
+                    const imageUri = formData.images[index];
+                    try {
+                      submitData.append('photos', {
+                        uri: imageUri,
+                        type: 'image/jpeg',
+                        name: `vehicle_photo_${index + 1}.jpg`,
+                      } as any);
+                    } catch (error) {
+                      console.error(`Error processing image ${index + 1}:`, error);
+                    }
+                  }
+                }
+
+                console.log('FormData prepared for submission', submitData);
+
+                // Make API call
+                const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/upload/vehicle/`;
+                console.log(apiURL)
+                const response = await fetch(apiURL, {
+                  method: 'POST',
+                  body: submitData,
+                  headers: {
+                    // Remove Content-Type header - let the browser set it automatically for FormData
+                    // 'Content-Type': 'multipart/form-data', // Don't set this manually
+                    // Add authorization header if needed
+                    // 'Authorization': 'Bearer YOUR_TOKEN_HERE',
+                  },
+                });
+
+                console.log('API Response Status:', response.status);
+
+                if (response.status === 201) {
+                  Alert.alert(
+                    'Success',
+                    'Vehicle submitted successfully!',
+                    [
+                      {
+                        text: 'OK',
+                        onPress: () => {
+                          router.push('/');
+                        }
+                      }
+                    ]
+                  );
+                } else {
+                  const errorData = await response.json().catch(() => ({}));
+                  console.error('API Error Response:', errorData);
+                  Alert.alert(
+                    'Error',
+                    errorData.error || errorData.message || `Failed to submit vehicle. Status: ${response.status}`,
+                    [{ text: 'OK' }]
+                  );
+                }
+
+              } catch (error) {
+                console.error('Error submitting vehicle:', error);
+                Alert.alert(
+                  'Error',
+                  'Network error. Please check your connection and try again.',
+                  [{ text: 'OK' }]
+                );
+              }
             }
           },
         ]

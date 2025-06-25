@@ -1,4 +1,3 @@
-// Step5Availability.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -9,11 +8,11 @@ import {
   Modal,
 } from 'react-native';
 import { Calendar, Clock, ChevronDown, X } from 'lucide-react-native';
-import { VehicleForm } from '../types/VehicleTypes';
+import { BicycleForm } from '../types/BicycleTypes';
 
-interface Step5AvailabilityProps {
-  formData: VehicleForm;
-  updateFormData: (field: keyof VehicleForm, value: any) => void;
+interface Step4AvailabilityProps {
+  formData: BicycleForm;
+  updateFormData: (field: keyof BicycleForm, value: any) => void;
 }
 
 interface TimeSlot {
@@ -37,7 +36,7 @@ interface AvailabilityData {
   isAllDay: boolean;
 }
 
-const Step5Availability: React.FC<Step5AvailabilityProps> = ({
+const Step4Availability: React.FC<Step4AvailabilityProps> = ({
   formData,
   updateFormData,
 }) => {
@@ -842,4 +841,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Step5Availability;
+export default Step4Availability;

@@ -1,109 +1,113 @@
-// components/Step1BasicInfo.tsx
+// components/Step4PhotosDocuments.tsx
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
-import { StepProps, DropdownOption, brandOptions, vehicleTypeOptions } from '../types/VehicleTypes';
+import { View, Text, TouchableOpacity, Alert, Image, StyleSheet } from 'react-native';
+import { Camera, Upload, CheckCircle, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { StepProps } from '../types/BicycleTypes';
 
+const Step3PhotosDocuments: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const handleImagePicker = async () => {
+    if (formData.images.length >= 8) {
+      Alert.alert('Maximum Photos', 'You can upload maximum 8 photos');
+      return;
+    }
 
-const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDropdown, setShowDropdown }) => {
-  const renderDropdown = (
-    field: keyof typeof formData,
-    options: DropdownOption[],
-    placeholder: string
-  ) => (
-    <View style={styles.inputContainer}>
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setShowDropdown(showDropdown === field ? null : field)}
-      >
-        <Text style={[styles.dropdownText, !formData[field] && styles.placeholderText]}>
-          {formData[field] ? options.find(opt => opt.value === formData[field])?.label : placeholder}
-        </Text>
-        <ChevronDown size={20} color="#6B7280" />
-      </TouchableOpacity>
+    Alert.alert(
+      'Add Bicycle Photos',
+      'Choose an option',
+      [
+        { text: 'Camera', onPress: () => openCamera() },
+        { text: 'Gallery', onPress: () => openGallery() },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
-      {showDropdown === field && (
-        <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={styles.dropdownItem}
-              onPress={() => {
-                updateFormData(field, option.value);
-                setShowDropdown(null);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{option.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+  const openCamera = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Camera permission is required to take photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const newImages = [...formData.images, result.assets[0].uri];
+      updateFormData('images', newImages);
+    }
+  };
+
+  const openGallery = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Gallery permission is required to select photos');
+      return;
+    }
+
+    const remainingSlots = 8 - formData.images.length;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: remainingSlots,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const newImages = [...formData.images, ...result.assets.map(asset => asset.uri)];
+      updateFormData('images', newImages);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    updateFormData('images', newImages);
+  };
 
   return (
     <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Basic Vehicle Information</Text>
+      <Text style={styles.stepTitle}>Photos & Documents</Text>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Type *</Text>
-        {renderDropdown('vehicleType', vehicleTypeOptions, 'Select vehicle Type')}
-      </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Bicycle Photos *</Text>
+        <Text style={styles.sectionSubtitle}>Add at least 5 high-quality photos (maximum 8)</Text>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Brand *</Text>
-        {renderDropdown('brand', brandOptions, 'Select vehicle brand')}
-      </View>
+        <TouchableOpacity style={styles.uploadButton} onPress={handleImagePicker}>
+          <Camera size={24} color="#059669" />
+          <Text style={styles.uploadButtonText}>
+            Add Photos ({formData.images.length}/8)
+          </Text>
+        </TouchableOpacity>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Model *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., City, Swift, Innova"
-          value={formData.model}
-          onChangeText={(text) => updateFormData('model', text)}
-        />
-      </View>
-
-      <View style={styles.row}>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Year *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="2020"
-            value={formData.year}
-            onChangeText={(text) => updateFormData('year', text)}
-            keyboardType="numeric"
-            maxLength={4}
-          />
-        </View>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Color *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="White"
-            value={formData.color}
-            onChangeText={(text) => updateFormData('color', text)}
-          />
-        </View>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>License Plate Number *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="MH01AB1234"
-          value={formData.licensePlate}
-          onChangeText={(text) => updateFormData('licensePlate', text.toUpperCase())}
-          autoCapitalize="characters"
-        />
+        {formData.images.length > 0 && (
+          <View style={styles.imageGrid}>
+            {formData.images.map((image, index) => (
+              <View key={index} style={styles.imageContainer}>
+                <Image source={{ uri: image }} style={styles.uploadedImage} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => removeImage(index)}
+                >
+                  <X size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
 };
 
-
-export default Step1BasicInfo;
+export default Step3PhotosDocuments;
 
 const styles = StyleSheet.create({
   container: {

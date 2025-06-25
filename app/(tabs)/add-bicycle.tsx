@@ -1,109 +1,184 @@
-// components/Step1BasicInfo.tsx
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
-import { StepProps, DropdownOption, brandOptions, vehicleTypeOptions } from '../types/VehicleTypes';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+} from 'react-native';
+import { ArrowLeft } from 'lucide-react-native';
+import { router } from 'expo-router';
 
+import { BicycleForm, DropdownOption } from '../../types/BicycleTypes';
+import Step1BasicInfo from '../../components/Step1BasicInfoBicycle';
+import Step2PricingLocation from '../../components/Step2PricingLocationBicycle';
+import Step3PhotosDocuments from '../../components/Step3PhotosDocumentsBicycle';
+import Step4Availability from '../../components/Step4AvailabilityBicycle';
 
-const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDropdown, setShowDropdown }) => {
-  const renderDropdown = (
-    field: keyof typeof formData,
-    options: DropdownOption[],
-    placeholder: string
-  ) => (
-    <View style={styles.inputContainer}>
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setShowDropdown(showDropdown === field ? null : field)}
-      >
-        <Text style={[styles.dropdownText, !formData[field] && styles.placeholderText]}>
-          {formData[field] ? options.find(opt => opt.value === formData[field])?.label : placeholder}
-        </Text>
-        <ChevronDown size={20} color="#6B7280" />
-      </TouchableOpacity>
+const AddBicycleScreen: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
-      {showDropdown === field && (
-        <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={styles.dropdownItem}
-              onPress={() => {
-                updateFormData(field, option.value);
-                setShowDropdown(null);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{option.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
+  const [formData, setFormData] = useState<BicycleForm>({
+    brand: '',
+    make: '',
+    model: '',
+    year: '',
+    color: '',
+    pricePerDay: '',
+    pricePerHour: '',
+    address: '',
+    street: '',
+    city: '',
+    state: '',
+    country: '',
+    features: [],
+    images: [],
+    availability: null, // Add availability field
+  });
+
+  const totalSteps = 4; // Updated to 4 steps
+
+  const updateFormData = (field: keyof BicycleForm, value: string | string[] | any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.brand && formData.make && formData.model && formData.year && formData.color);
+      case 2:
+        return !!(formData.pricePerDay && formData.pricePerHour && formData.address && formData.city && formData.state && formData.country);
+      case 3:
+        return formData.images.length >= 1;
+      case 4:
+        // Validate availability step
+        if (!formData.availability) return false;
+        const availability = formData.availability;
+        if (availability.availabilityType === 'specific-dates') {
+          return availability.specificDates && availability.specificDates.length > 0;
+        } else if (availability.availabilityType === 'recurring-days') {
+          return availability.recurringDays && availability.recurringDays.length > 0;
+        }
+        return false;
+      default:
+        return false;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    } else {
+      Alert.alert('Incomplete Information', 'Please fill all required fields before proceeding.');
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleBackPress = () => {
+    if (currentStep > 1) {
+      prevStep();
+    } else {
+      router.push('/host');
+    }
+  };
+
+  const submitForm = () => {
+    if (validateStep(4)) { // Updated to validate step 5
+      Alert.alert(
+        'Submit Bicycle',
+        'Your Bicycle will be reviewed and activated within 24-48 hours.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Submit',
+            onPress: () => {
+              console.log('Submitting bicycle data:', formData);
+              // Here you would typically make an API call to submit the data
+              router.back();
+            }
+          },
+        ]
+      );
+    } else {
+      Alert.alert('Incomplete Information', 'Please complete all required steps.');
+    }
+  };
+
+  const renderCurrentStep = () => {
+    const stepProps = {
+      formData,
+      updateFormData,
+      showDropdown,
+      setShowDropdown,
+    };
+
+    switch (currentStep) {
+      case 1:
+        return <Step1BasicInfo {...stepProps} />;
+      case 2:
+        return <Step2PricingLocation {...stepProps} />;
+      case 3:
+        return <Step3PhotosDocuments {...stepProps} />;
+      case 4:
+        return <Step4Availability formData={formData} updateFormData={updateFormData} />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Basic Vehicle Information</Text>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Type *</Text>
-        {renderDropdown('vehicleType', vehicleTypeOptions, 'Select vehicle Type')}
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+          <ArrowLeft size={20} color="#374151" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Add Bicycle</Text>
+        <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Brand *</Text>
-        {renderDropdown('brand', brandOptions, 'Select vehicle brand')}
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Model *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., City, Swift, Innova"
-          value={formData.model}
-          onChangeText={(text) => updateFormData('model', text)}
-        />
-      </View>
-
-      <View style={styles.row}>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Year *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="2020"
-            value={formData.year}
-            onChangeText={(text) => updateFormData('year', text)}
-            keyboardType="numeric"
-            maxLength={4}
-          />
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${(currentStep / totalSteps) * 100}%` }]} />
         </View>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Color *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="White"
-            value={formData.color}
-            onChangeText={(text) => updateFormData('color', text)}
-          />
-        </View>
+        <Text style={styles.progressText}>Step {currentStep} of {totalSteps}</Text>
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>License Plate Number *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="MH01AB1234"
-          value={formData.licensePlate}
-          onChangeText={(text) => updateFormData('licensePlate', text.toUpperCase())}
-          autoCapitalize="characters"
-        />
+      {/* Content */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {renderCurrentStep()}
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNavigation}>
+        {currentStep > 1 && (
+          <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
+            <Text style={styles.secondaryButtonText}>Previous</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[styles.primaryButton, currentStep === 1 && styles.fullWidthButton]}
+          onPress={currentStep === totalSteps ? submitForm : nextStep}
+        >
+          <Text style={styles.primaryButtonText}>
+            {currentStep === totalSteps ? 'Submit Bicycle' : 'Next'}
+          </Text>
+        </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
-
-
-export default Step1BasicInfo;
 
 const styles = StyleSheet.create({
   container: {
@@ -433,3 +508,5 @@ const styles = StyleSheet.create({
     marginTop: 2,
   }
 });
+
+export default AddBicycleScreen;

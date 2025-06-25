@@ -1,109 +1,108 @@
-// components/Step1BasicInfo.tsx
+// components/Step3PricingLocation.tsx
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
-import { StepProps, DropdownOption, brandOptions, vehicleTypeOptions } from '../types/VehicleTypes';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { MapPin } from 'lucide-react-native';
+import { StepProps } from '../types/BicycleTypes';
 
-
-const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDropdown, setShowDropdown }) => {
-  const renderDropdown = (
-    field: keyof typeof formData,
-    options: DropdownOption[],
-    placeholder: string
-  ) => (
-    <View style={styles.inputContainer}>
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        onPress={() => setShowDropdown(showDropdown === field ? null : field)}
-      >
-        <Text style={[styles.dropdownText, !formData[field] && styles.placeholderText]}>
-          {formData[field] ? options.find(opt => opt.value === formData[field])?.label : placeholder}
-        </Text>
-        <ChevronDown size={20} color="#6B7280" />
-      </TouchableOpacity>
-
-      {showDropdown === field && (
-        <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={styles.dropdownItem}
-              onPress={() => {
-                updateFormData(field, option.value);
-                setShowDropdown(null);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{option.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
-
+const Step2PricingLocation: React.FC<StepProps> = ({ formData, updateFormData }) => {
   return (
     <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Basic Vehicle Information</Text>
+      <Text style={styles.stepTitle}>Pricing & Location</Text>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Type *</Text>
-        {renderDropdown('vehicleType', vehicleTypeOptions, 'Select vehicle Type')}
+      <View style={styles.row}>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Price per Day (₹) *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="1500"
+            value={formData.pricePerDay}
+            onChangeText={(text) => updateFormData('pricePerDay', text)}
+            keyboardType="numeric"
+          />
+        </View>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Price per Hour (₹) *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="200"
+            value={formData.pricePerHour}
+            onChangeText={(text) => updateFormData('pricePerHour', text)}
+            keyboardType="numeric"
+          />
+        </View>
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Brand *</Text>
-        {renderDropdown('brand', brandOptions, 'Select vehicle brand')}
+        <Text style={styles.label}>Address *</Text>
+        <View style={styles.locationContainer}>
+          <View style={styles.mapPinContainer}>
+            <MapPin size={18} color="#059669" />
+          </View>
+          <TextInput
+            style={styles.locationInput}
+            placeholder="Enter your complete address"
+            value={formData.address}
+            onChangeText={(text) => updateFormData('address', text)}
+            multiline
+            numberOfLines={2}
+          />
+        </View>
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Model *</Text>
+        <Text style={styles.label}>Street</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g., City, Swift, Innova"
-          value={formData.model}
-          onChangeText={(text) => updateFormData('model', text)}
+          placeholder="Street name"
+          value={formData.street}
+          onChangeText={(text) => updateFormData('street', text)}
         />
       </View>
 
       <View style={styles.row}>
         <View style={styles.halfInput}>
-          <Text style={styles.label}>Year *</Text>
+          <Text style={styles.label}>City *</Text>
           <TextInput
             style={styles.input}
-            placeholder="2020"
-            value={formData.year}
-            onChangeText={(text) => updateFormData('year', text)}
-            keyboardType="numeric"
-            maxLength={4}
+            placeholder="City"
+            value={formData.city}
+            onChangeText={(text) => updateFormData('city', text)}
           />
         </View>
         <View style={styles.halfInput}>
-          <Text style={styles.label}>Color *</Text>
+          <Text style={styles.label}>State *</Text>
           <TextInput
             style={styles.input}
-            placeholder="White"
-            value={formData.color}
-            onChangeText={(text) => updateFormData('color', text)}
+            placeholder="State"
+            value={formData.state}
+            onChangeText={(text) => updateFormData('state', text)}
           />
         </View>
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>License Plate Number *</Text>
+        <Text style={styles.label}>Country *</Text>
         <TextInput
           style={styles.input}
-          placeholder="MH01AB1234"
-          value={formData.licensePlate}
-          onChangeText={(text) => updateFormData('licensePlate', text.toUpperCase())}
-          autoCapitalize="characters"
+          placeholder="Country"
+          value={formData.country}
+          onChangeText={(text) => updateFormData('country', text)}
         />
+      </View>
+
+      <View style={styles.pricingTip}>
+        <Text style={styles.tipTitle}>💡 Pricing Tips</Text>
+        <Text style={styles.tipText}>
+          • Research similar bicycles in your area{'\n'}
+          • Consider fuel costs and maintenance{'\n'}
+          • Competitive pricing gets more bookings
+        </Text>
       </View>
     </View>
   );
 };
 
-
-export default Step1BasicInfo;
+export default Step2PricingLocation;
 
 const styles = StyleSheet.create({
   container: {

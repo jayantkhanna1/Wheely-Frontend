@@ -79,15 +79,26 @@ const Step3PricingLocation: React.FC<StepProps> = ({ formData, updateFormData })
           />
         </View>
       </View>
+      <View style={styles.row}>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Pincode *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Pincode"
+            value={formData.pincode}
+            onChangeText={(text) => updateFormData('pincode', text)}
+          />
+        </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Country *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Country"
-          value={formData.country}
-          onChangeText={(text) => updateFormData('country', text)}
-        />
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Country *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Country"
+            value={formData.country}
+            onChangeText={(text) => updateFormData('country', text)}
+          />
+        </View>
       </View>
 
       <View style={styles.pricingTip}>
@@ -184,6 +195,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 10
   },
   halfInput: {
     flex: 1,

@@ -17,6 +17,7 @@ import {
   MapPin,
   Shield,
   Users,
+  Bike,
   Star,
   Plus,
   ChevronRight,
@@ -120,6 +121,10 @@ const HostScreen: React.FC = () => {
     // Alert.alert('Add Vehicle', 'Navigate to vehicle registration form');
     router.push('/add-vehicle');
   };
+  const handleAddBicycle = () => {
+    // Navigate to add bicycle screen
+    router.push('/add-bicycle');
+  };
 
   const handleVehiclePress = (vehicle: HostVehicle) => {
     // Navigate to vehicle details screen
@@ -149,9 +154,13 @@ const HostScreen: React.FC = () => {
             <Plus size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Add Vehicle</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButtonSecondary}>
+          {/* <TouchableOpacity style={styles.actionButtonSecondary}>
             <Calendar size={20} color="#059669" />
-            <Text style={styles.actionButtonSecondaryText}>Manage Calendar</Text>
+            <Text style={styles.actionButtonSecondaryText}>Add Bicycle</Text>
+          </TouchableOpacity> */}
+          <TouchableOpacity style={styles.actionButton} onPress={handleAddBicycle}>
+            <Bike size={20} color="#FFFFFF" />
+            <Text style={styles.actionButtonText}>Add Bicycle</Text>
           </TouchableOpacity>
         </View>
       </View>
