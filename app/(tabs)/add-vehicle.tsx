@@ -158,7 +158,7 @@ const AddVehicleScreen: React.FC = () => {
 
                 // Map availability slots
                 const availabilitySlots: any[] = [];
-
+                console.log(formData.availability?.availabilityType)
                 if (formData.availability?.availabilityType === 'recurring-days') {
                   const today = new Date();
                   const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
@@ -282,7 +282,7 @@ const AddVehicleScreen: React.FC = () => {
                       {
                         text: 'OK',
                         onPress: () => {
-                          router.push('/');
+                          // router.push('/');
                         }
                       }
                     ]
