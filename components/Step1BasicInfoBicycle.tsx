@@ -43,28 +43,18 @@ const Step1BasicInfo: React.FC<StepProps> = ({ formData, updateFormData, showDro
 
   return (
     <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Basic Vehicle Information</Text>
+      <Text style={styles.stepTitle}>Basic Bicycle Information</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Brand *</Text>
-        {renderDropdown('brand', brandOptions, 'Select vehicle brand')}
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Vehicle Make *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., Honda, Maruti, Toyota"
-          value={formData.make}
-          onChangeText={(text) => updateFormData('make', text)}
-        />
+        <Text style={styles.label}>Bicycle Brand *</Text>
+        {renderDropdown('brand', brandOptions, 'Select Bicycle brand')}
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Model *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g., City, Swift, Innova"
+          placeholder="e.g., Domane SL 7"
           value={formData.model}
           onChangeText={(text) => updateFormData('model', text)}
         />

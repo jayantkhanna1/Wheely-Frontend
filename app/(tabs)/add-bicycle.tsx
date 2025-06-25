@@ -16,6 +16,7 @@ import Step1BasicInfo from '../../components/Step1BasicInfoBicycle';
 import Step2PricingLocation from '../../components/Step2PricingLocationBicycle';
 import Step3PhotosDocuments from '../../components/Step3PhotosDocumentsBicycle';
 import Step4Availability from '../../components/Step4AvailabilityBicycle';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AddBicycleScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -23,7 +24,6 @@ const AddBicycleScreen: React.FC = () => {
 
   const [formData, setFormData] = useState<BicycleForm>({
     brand: '',
-    make: '',
     model: '',
     year: '',
     color: '',
@@ -34,6 +34,7 @@ const AddBicycleScreen: React.FC = () => {
     city: '',
     state: '',
     country: '',
+    pincode: '',
     features: [],
     images: [],
     availability: null, // Add availability field
@@ -51,21 +52,15 @@ const AddBicycleScreen: React.FC = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.brand && formData.make && formData.model && formData.year && formData.color);
+        return !!(formData.brand && formData.model && formData.year && formData.color);
       case 2:
         return !!(formData.pricePerDay && formData.pricePerHour && formData.address && formData.city && formData.state && formData.country);
       case 3:
         return formData.images.length >= 1;
       case 4:
-        // Validate availability step
         if (!formData.availability) return false;
         const availability = formData.availability;
-        if (availability.availabilityType === 'specific-dates') {
-          return availability.specificDates && availability.specificDates.length > 0;
-        } else if (availability.availabilityType === 'recurring-days') {
-          return availability.recurringDays && availability.recurringDays.length > 0;
-        }
-        return false;
+        return availability.timeSlots && availability.timeSlots.length > 0;
       default:
         return false;
     }
@@ -90,20 +85,118 @@ const AddBicycleScreen: React.FC = () => {
       router.push('/host');
     }
   };
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
 
-  const submitForm = () => {
-    if (validateStep(4)) { // Updated to validate step 5
+  const submitForm = async () => {
+    if (validateStep(4)) {
       Alert.alert(
         'Submit Bicycle',
-        'Your Bicycle will be reviewed and activated within 24-48 hours.',
+        'Your bicycle will be reviewed and activated within 24-48 hours.',
         [
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Submit',
-            onPress: () => {
-              console.log('Submitting bicycle data:', formData);
-              // Here you would typically make an API call to submit the data
-              router.back();
+            onPress: async () => {
+              try {
+                console.log('Submitting vehicle data:', formData);
+
+                // Create FormData for multipart/form-data request
+                const submitData = new FormData();
+                const userData = await AsyncStorage.getItem('user_data');
+                console.log('User data:', userData);
+                const user = userData ? JSON.parse(userData) : null;
+                const owner_id = user ? user.id : null;
+
+                // Map and append basic vehicle information
+                submitData.append('owner_id', owner_id?.toString() || '');
+                submitData.append('vehicle_name', `${formData.brand} ${formData.model}`);
+                submitData.append('vehicle_brand', formData.brand);
+                submitData.append('vehicle_model', formData.model);
+                submitData.append('vehicle_color', formData.color);
+                submitData.append('vehicle_year', formData.year?.toString() || '');
+                submitData.append('vehicle_type', "Bicycle");
+                submitData.append('price_per_hour', parseFloat(formData.pricePerHour || "0").toFixed(2));
+                submitData.append('price_per_day', parseFloat(formData.pricePerDay || "0").toFixed(2));
+
+                // Map location data - send as JSON string
+                const locationData = {
+                  address: `${formData.address || ''}, ${formData.street || ''}, ${formData.city || ''}`.replace(/^,\s*|,\s*$/g, ''),
+                  street: formData.street || '',
+                  colony: formData.address || '',
+                  road: formData.street || '',
+                  pincode: formData.pincode || '',
+                  city: formData.city || '',
+                  state: formData.state || '',
+                  country: formData.country || '',
+                  google_map_location: ""
+                };
+                submitData.append('location', JSON.stringify(locationData));
+                submitData.append('availability_slots', JSON.stringify(formData.availability));
+                submitData.append('is_available', 'true');
+                submitData.append('features', JSON.stringify(formData.features || []));
+
+                // Handle photos - React Native approach
+                if (formData.images && formData.images.length > 0) {
+                  for (let index = 0; index < formData.images.length; index++) {
+                    const imageUri = formData.images[index];
+                    try {
+                      submitData.append('photos', {
+                        uri: imageUri,
+                        type: 'image/jpeg',
+                        name: `vehicle_photo_${index + 1}.jpg`,
+                      } as any);
+                    } catch (error) {
+                      console.error(`Error processing image ${index + 1}:`, error);
+                    }
+                  }
+                }
+
+                console.log('FormData prepared for submission', submitData);
+
+                // Make API call
+                const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/upload/vehicle/`;
+                console.log(apiURL)
+                const response = await fetch(apiURL, {
+                  method: 'POST',
+                  body: submitData,
+                  headers: {},
+                });
+
+                console.log('API Response Status:', response.status);
+
+                if (response.status === 201) {
+                  Alert.alert(
+                    'Success',
+                    'Vehicle submitted successfully!',
+                    [
+                      {
+                        text: 'OK',
+                        onPress: () => {
+                          router.push('/');
+                        }
+                      }
+                    ]
+                  );
+                } else {
+                  const errorData = await response.json().catch(() => ({}));
+                  console.error('API Error Response:', errorData);
+                  Alert.alert(
+                    'Error',
+                    errorData.error || errorData.message || `Failed to submit vehicle. Status: ${response.status}`,
+                    [{ text: 'OK' }]
+                  );
+                }
+
+              } catch (error) {
+                console.error('Error submitting vehicle:', error);
+                Alert.alert(
+                  'Error',
+                  'Network error. Please check your connection and try again.',
+                  [{ text: 'OK' }]
+                );
+              }
             }
           },
         ]
@@ -112,6 +205,7 @@ const AddBicycleScreen: React.FC = () => {
       Alert.alert('Incomplete Information', 'Please complete all required steps.');
     }
   };
+
 
   const renderCurrentStep = () => {
     const stepProps = {

@@ -2,7 +2,6 @@
 export interface BicycleForm {
   // Basic Information
   brand: string;
-  make: string;
   model: string;
   year: string;
   color: string;
@@ -18,6 +17,7 @@ export interface BicycleForm {
   city: string;
   state: string;
   country: string;
+  pincode: string;
   
   // Features
   features: string[];

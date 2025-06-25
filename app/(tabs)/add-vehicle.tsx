@@ -74,12 +74,7 @@ const AddVehicleScreen: React.FC = () => {
         // Validate availability step
         if (!formData.availability) return false;
         const availability = formData.availability;
-        if (availability.availabilityType === 'specific-dates') {
-          return availability.specificDates && availability.specificDates.length > 0;
-        } else if (availability.availabilityType === 'recurring-days') {
-          return availability.recurringDays && availability.recurringDays.length > 0;
-        }
-        return false;
+        return availability.timeSlots && availability.timeSlots.length > 0;
       default:
         return false;
     }
@@ -155,46 +150,7 @@ const AddVehicleScreen: React.FC = () => {
                   google_map_location: ""
                 };
                 submitData.append('location', JSON.stringify(locationData));
-
-                // Map availability slots
-                const availabilitySlots: any[] = [];
-                console.log(formData.availability?.availabilityType)
-                if (formData.availability?.availabilityType === 'recurring-days') {
-                  const today = new Date();
-                  const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-
-                  formData.availability.recurringDays?.forEach((day: string) => {
-                    const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day);
-                    const targetDate = new Date(startOfWeek);
-                    targetDate.setDate(startOfWeek.getDate() + dayIndex);
-
-                    if (formData.availability.isAllDay) {
-                      availabilitySlots.push({
-                        start_date: targetDate.toISOString().split('T')[0],
-                        end_date: targetDate.toISOString().split('T')[0],
-                        start_time: "00:00:00",
-                        end_time: "23:59:59",
-                        is_available: true
-                      });
-                    } else {
-                      formData.availability.timeSlots?.forEach((slot: { day: string; startTime: string; endTime: string; }) => {
-                        if (slot.day === day) {
-                          availabilitySlots.push({
-                            start_date: targetDate.toISOString().split('T')[0],
-                            end_date: targetDate.toISOString().split('T')[0],
-                            start_time: slot.startTime,
-                            end_time: slot.endTime,
-                            is_available: true
-                          });
-                        }
-                      });
-                    }
-                  });
-                }
-
-                if (availabilitySlots.length > 0) {
-                  submitData.append('availability_slots', JSON.stringify(availabilitySlots));
-                }
+                submitData.append('availability_slots', JSON.stringify(formData.availability));
                 const categ= capitalizeFirst(formData.category) || '';
                 submitData.append('is_available', 'true');
                 submitData.append('category', categ);
@@ -282,7 +238,7 @@ const AddVehicleScreen: React.FC = () => {
                       {
                         text: 'OK',
                         onPress: () => {
-                          // router.push('/');
+                          router.push('/');
                         }
                       }
                     ]

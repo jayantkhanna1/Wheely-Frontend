@@ -1,3 +1,4 @@
+// Step4Availability.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -7,7 +8,7 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
-import { Calendar, Clock, ChevronDown, X } from 'lucide-react-native';
+import { Calendar, ChevronDown, X } from 'lucide-react-native';
 import { BicycleForm } from '../types/BicycleTypes';
 
 interface Step4AvailabilityProps {
@@ -29,9 +30,7 @@ interface LocalTimeSlot {
 }
 
 interface AvailabilityData {
-  availabilityType: 'specific-dates' | 'recurring-days';
   specificDates: string[];
-  recurringDays: string[];
   timeSlots: TimeSlot[];
   isAllDay: boolean;
 }
@@ -41,9 +40,7 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
   updateFormData,
 }) => {
   const [availabilityData, setAvailabilityData] = useState<AvailabilityData>({
-    availabilityType: 'specific-dates',
     specificDates: [],
-    recurringDays: [],
     timeSlots: [],
     isAllDay: false,
   });
@@ -53,30 +50,38 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
     { startTime: '09:00', endTime: '18:00' }
   ]);
 
-  const [showCalendar, setShowCalendar] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [editingTimeSlot, setEditingTimeSlot] = useState<{ index: number, field: 'start' | 'end' } | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-
-  const daysOfWeek = [
-    { key: 'monday', label: 'Monday' },
-    { key: 'tuesday', label: 'Tuesday' },
-    { key: 'wednesday', label: 'Wednesday' },
-    { key: 'thursday', label: 'Thursday' },
-    { key: 'friday', label: 'Friday' },
-    { key: 'saturday', label: 'Saturday' },
-    { key: 'sunday', label: 'Sunday' },
-  ];
+  const [dateSelectionStart, setDateSelectionStart] = useState<string | null>(null);
 
   const timeOptions = Array.from({ length: 24 }, (_, i) => {
     const hour = i.toString().padStart(2, '0');
     return [`${hour}:00`, `${hour}:30`];
   }).flat();
 
+  // Function to get all dates between two dates (inclusive)
+  const getDatesBetween = (startDate: string, endDate: string): string[] => {
+    const dates = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Ensure start is before end
+    const actualStart = start <= end ? start : end;
+    const actualEnd = start <= end ? end : start;
+    
+    const currentDate = new Date(actualStart);
+    while (currentDate <= actualEnd) {
+      dates.push(currentDate.toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
   // Function to convert local time slots to proper format
   const convertToProperTimeSlots = (): TimeSlot[] => {
-    if (availabilityData.availabilityType === 'specific-dates' && availabilityData.specificDates.length > 0) {
-      // For specific dates, create time slots for each selected date
+    if (availabilityData.specificDates.length > 0) {
       const timeSlots: TimeSlot[] = [];
       
       availabilityData.specificDates.forEach(date => {
@@ -90,37 +95,6 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
           });
         });
       });
-      
-      return timeSlots;
-    } else if (availabilityData.availabilityType === 'recurring-days' && availabilityData.recurringDays.length > 0) {
-      // For recurring days, you might want to create slots for a period (e.g., next 30 days)
-      const timeSlots: TimeSlot[] = [];
-      const today = new Date();
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 30); // Next 30 days
-      
-      const dayMapping: { [key: string]: number } = {
-        'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
-        'thursday': 4, 'friday': 5, 'saturday': 6
-      };
-      
-      for (let d = new Date(today); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dayOfWeek = Object.keys(dayMapping).find(key => dayMapping[key] === d.getDay());
-        
-        if (dayOfWeek && availabilityData.recurringDays.includes(dayOfWeek)) {
-          const dateStr = d.toISOString().split('T')[0];
-          
-          localTimeSlots.forEach(slot => {
-            timeSlots.push({
-              start_date: dateStr,
-              end_date: dateStr,
-              start_time: `${slot.startTime}:00`,
-              end_time: `${slot.endTime}:00`,
-              is_available: true
-            });
-          });
-        }
-      }
       
       return timeSlots;
     }
@@ -141,25 +115,7 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
     }));
     
     updateFormData('availability', updatedAvailabilityData);
-  }, [availabilityData.specificDates, availabilityData.recurringDays, localTimeSlots, availabilityData.availabilityType, availabilityData.isAllDay]);
-
-  const toggleAvailabilityType = (type: 'specific-dates' | 'recurring-days') => {
-    setAvailabilityData(prev => ({
-      ...prev,
-      availabilityType: type,
-      specificDates: type === 'specific-dates' ? prev.specificDates : [],
-      recurringDays: type === 'recurring-days' ? prev.recurringDays : [],
-    }));
-  };
-
-  const toggleRecurringDay = (day: string) => {
-    setAvailabilityData(prev => ({
-      ...prev,
-      recurringDays: prev.recurringDays.includes(day)
-        ? prev.recurringDays.filter(d => d !== day)
-        : [...prev.recurringDays, day],
-    }));
-  };
+  }, [availabilityData.specificDates, localTimeSlots, availabilityData.isAllDay]);
 
   const generateCalendarDays = () => {
     const year = selectedMonth.getFullYear();
@@ -196,12 +152,34 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
     // Don't allow selection of past dates
     if (selectedDate < today) return;
 
+    // If this is the first date selection or we're starting a new selection
+    if (!dateSelectionStart) {
+      setDateSelectionStart(dateStr);
+      setAvailabilityData(prev => ({
+        ...prev,
+        specificDates: [dateStr]
+      }));
+    } else {
+      // This is the second date selection - create range
+      const allDatesInRange = getDatesBetween(dateSelectionStart, dateStr);
+      
+      setAvailabilityData(prev => ({
+        ...prev,
+        specificDates: [...new Set([...prev.specificDates, ...allDatesInRange])]
+      }));
+      
+      // Reset selection start for next range
+      setDateSelectionStart(null);
+    }
+  };
+
+  // Clear all selected dates
+  const clearSelectedDates = () => {
     setAvailabilityData(prev => ({
       ...prev,
-      specificDates: prev.specificDates.includes(dateStr)
-        ? prev.specificDates.filter(d => d !== dateStr)
-        : [...prev.specificDates, dateStr],
+      specificDates: []
     }));
+    setDateSelectionStart(null);
   };
 
   const isDateSelected = (day: number) => {
@@ -358,107 +336,44 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
   return (
     <ScrollView style={styles.container}>
       <View style={styles.stepContent}>
-        <Text style={styles.stepTitle}>Vehicle Availability</Text>
+        <Text style={styles.stepTitle}>Bicycle Availability</Text>
         <Text style={styles.stepSubtitle}>
-          Set when your vehicle is available for booking
+          Set when your bicycle is available for booking
         </Text>
 
-        {/* Availability Type Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Availability Type</Text>
-          <View style={styles.typeSelector}>
-            <TouchableOpacity
-              style={[
-                styles.typeButton,
-                availabilityData.availabilityType === 'specific-dates' && styles.typeButtonActive
-              ]}
-              onPress={() => toggleAvailabilityType('specific-dates')}
-            >
-              <Calendar size={20} color={availabilityData.availabilityType === 'specific-dates' ? '#FFFFFF' : '#6B7280'} />
-              <Text style={[
-                styles.typeButtonText,
-                availabilityData.availabilityType === 'specific-dates' && styles.typeButtonTextActive
-              ]}>
-                Specific Dates
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.typeButton,
-                availabilityData.availabilityType === 'recurring-days' && styles.typeButtonActive
-              ]}
-              onPress={() => toggleAvailabilityType('recurring-days')}
-            >
-              <Clock size={20} color={availabilityData.availabilityType === 'recurring-days' ? '#FFFFFF' : '#6B7280'} />
-              <Text style={[
-                styles.typeButtonText,
-                availabilityData.availabilityType === 'recurring-days' && styles.typeButtonTextActive
-              ]}>
-                Recurring Days
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Specific Dates Selection */}
-        {availabilityData.availabilityType === 'specific-dates' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Available Dates</Text>
-            <Text style={styles.sectionSubtitle}>
-              Choose specific dates when your vehicle will be available
-            </Text>
-            {renderCalendar()}
-            {availabilityData.specificDates.length > 0 && (
-              <View style={styles.selectedDatesContainer}>
-                <Text style={styles.selectedDatesTitle}>
-                  Selected Dates ({availabilityData.specificDates.length})
-                </Text>
-                <View style={styles.selectedDatesList}>
-                  {availabilityData.specificDates.slice(0, 3).map(date => (
-                    <Text key={date} style={styles.selectedDate}>
-                      {new Date(date).toLocaleDateString()}
-                    </Text>
-                  ))}
-                  {availabilityData.specificDates.length > 3 && (
-                    <Text style={styles.moreDates}>
-                      +{availabilityData.specificDates.length - 3} more
-                    </Text>
-                  )}
-                </View>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Recurring Days Selection */}
-        {availabilityData.availabilityType === 'recurring-days' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Days of Week</Text>
-            <Text style={styles.sectionSubtitle}>
-              Choose which days of the week your vehicle will be available
-            </Text>
-            <View style={styles.daysContainer}>
-              {daysOfWeek.map(day => (
-                <TouchableOpacity
-                  key={day.key}
-                  style={[
-                    styles.dayButton,
-                    availabilityData.recurringDays.includes(day.key) && styles.dayButtonActive
-                  ]}
-                  onPress={() => toggleRecurringDay(day.key)}
-                >
-                  <Text style={[
-                    styles.dayButtonText,
-                    availabilityData.recurringDays.includes(day.key) && styles.dayButtonTextActive
-                  ]}>
-                    {day.label.slice(0, 3)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Select Available Dates</Text>
+              <Text style={styles.sectionSubtitle}>
+                Tap a date to start, then tap another to create a date range
+              </Text>
             </View>
           </View>
-        )}
+          
+          {renderCalendar()}
+          
+          {availabilityData.specificDates.length > 0 && (
+            <View style={styles.selectedDatesContainer}>
+              <Text style={styles.selectedDatesTitle}>
+                Selected Dates ({availabilityData.specificDates.length})
+              </Text>
+              <View style={styles.selectedDatesList}>
+                {availabilityData.specificDates.slice(0, 3).map(date => (
+                  <Text key={date} style={styles.selectedDate}>
+                    {new Date(date).toLocaleDateString()}
+                  </Text>
+                ))}
+                {availabilityData.specificDates.length > 3 && (
+                  <Text style={styles.moreDates}>
+                    +{availabilityData.specificDates.length - 3} more
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* Time Slots */}
         <View style={styles.section}>
@@ -477,7 +392,6 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
                 }
               }}
             >
-              <Text style={styles.allDayText}>All Day</Text>
             </TouchableOpacity>
           </View>
 
@@ -525,10 +439,6 @@ const Step4Availability: React.FC<Step4AvailabilityProps> = ({
                   </View>
                 </View>
               ))}
-
-              <TouchableOpacity style={styles.addTimeSlotButton} onPress={addTimeSlot}>
-                <Text style={styles.addTimeSlotText}>+ Add Time Slot</Text>
-              </TouchableOpacity>
             </>
           )}
         </View>
@@ -574,36 +484,19 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
-  typeSelector: {
-    flexDirection: 'row',
-    gap: 12,
+  clearButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 6,
   },
-  typeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    gap: 8,
-  },
-  typeButtonActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
-  },
-  typeButtonText: {
-    fontSize: 14,
+  clearButtonText: {
+    fontSize: 12,
+    color: '#DC2626',
     fontWeight: '500',
-    color: '#6B7280',
-  },
-  typeButtonTextActive: {
-    color: '#FFFFFF',
   },
   calendar: {
     backgroundColor: '#FFFFFF',
@@ -703,54 +596,10 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontStyle: 'italic',
   },
-  daysContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  dayButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  dayButtonActive: {
-    backgroundColor: '#059669',
-    borderColor: '#059669',
-  },
-  dayButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  dayButtonTextActive: {
-    color: '#FFFFFF',
-  },
   allDayToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  toggle: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#059669',
-    alignItems: 'flex-end',
-  },
-  toggleDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
   },
   allDayText: {
     fontSize: 14,
