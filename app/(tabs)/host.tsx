@@ -122,8 +122,9 @@ const HostScreen: React.FC = () => {
 
   const handleVehiclePress = (vehicle: HostVehicle) => {
     // Navigate to vehicle details screen
-    Alert.alert('Vehicle Details', `View details for ${vehicle.name}`);
+    router.push('/vehicle-details');
   };
+  
 
   const renderOverview = () => (
     <View style={styles.tabContent}>

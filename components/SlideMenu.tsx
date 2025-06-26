@@ -140,16 +140,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
         // router.push('/offers');
       }
     },
-    {
-      id: 'helpline',
-      title: 'Helpline Support',
-      icon: <HelpCircle size={20} color="#374151" />,
-      onPress: () => {
-        router.push('/helpline-support');
-        // Add navigation logic here
-        // router.push('/helpline');
-      }
-    },
+  
     {
       id: 'policies',
       title: 'Policies',
