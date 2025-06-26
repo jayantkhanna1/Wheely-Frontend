@@ -7,8 +7,9 @@ import {
   StyleSheet,
   ScrollView,
   Modal,
+  Switch,
 } from 'react-native';
-import { Calendar, ChevronDown, X } from 'lucide-react-native';
+import { Calendar, ChevronDown, X, Plus } from 'lucide-react-native';
 import { VehicleForm } from '../types/VehicleTypes';
 
 interface Step5AvailabilityProps {
@@ -85,15 +86,27 @@ const Step5Availability: React.FC<Step5AvailabilityProps> = ({
       const timeSlots: TimeSlot[] = [];
       
       availabilityData.specificDates.forEach(date => {
-        localTimeSlots.forEach(slot => {
+        if (availabilityData.isAllDay) {
+          // For 24-hour availability, create a single slot covering the entire day
           timeSlots.push({
             start_date: date,
             end_date: date,
-            start_time: `${slot.startTime}:00`,
-            end_time: `${slot.endTime}:00`,
+            start_time: '00:00:00',
+            end_time: '23:59:59',
             is_available: true
           });
-        });
+        } else {
+          // For custom time slots, use the defined slots
+          localTimeSlots.forEach(slot => {
+            timeSlots.push({
+              start_date: date,
+              end_date: date,
+              start_time: `${slot.startTime}:00`,
+              end_time: `${slot.endTime}:00`,
+              is_available: true
+            });
+          });
+        }
       });
       
       return timeSlots;
@@ -220,6 +233,21 @@ const Step5Availability: React.FC<Step5AvailabilityProps> = ({
       }
       return newMonth;
     });
+  };
+
+  const handleAllDayToggle = (value: boolean) => {
+    setAvailabilityData(prev => ({ 
+      ...prev, 
+      isAllDay: value 
+    }));
+    
+    if (value) {
+      // If switching to all day, we don't need to change local time slots
+      // The convertToProperTimeSlots function will handle creating 24-hour slots
+    } else {
+      // If switching from all day, set default business hours
+      setLocalTimeSlots([{ startTime: '09:00', endTime: '18:00' }]);
+    }
   };
 
   const renderCalendar = () => {
@@ -350,6 +378,14 @@ const Step5Availability: React.FC<Step5AvailabilityProps> = ({
                 Tap a date to start, then tap another to create a date range
               </Text>
             </View>
+            {availabilityData.specificDates.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={clearSelectedDates}
+              >
+                <Text style={styles.clearButtonText}>Clear All</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           {renderCalendar()}
@@ -379,23 +415,30 @@ const Step5Availability: React.FC<Step5AvailabilityProps> = ({
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Available Time</Text>
-            <TouchableOpacity
-              style={styles.allDayToggle}
-              onPress={() => {
-                setAvailabilityData(prev => ({ ...prev, isAllDay: !prev.isAllDay }));
-                if (!availabilityData.isAllDay) {
-                  // If switching to all day, set 24-hour slots
-                  setLocalTimeSlots([{ startTime: '00:00', endTime: '23:59' }]);
-                } else {
-                  // If switching from all day, set default business hours
-                  setLocalTimeSlots([{ startTime: '09:00', endTime: '18:00' }]);
-                }
-              }}
-            >
-            </TouchableOpacity>
+            <View style={styles.allDayToggle}>
+              <Text style={styles.allDayText}>24 Hours</Text>
+              <Switch
+                value={availabilityData.isAllDay}
+                onValueChange={handleAllDayToggle}
+                trackColor={{ false: '#D1D5DB', true: '#059669' }}
+                thumbColor={availabilityData.isAllDay ? '#FFFFFF' : '#F3F4F6'}
+                ios_backgroundColor="#D1D5DB"
+              />
+            </View>
           </View>
 
-          {!availabilityData.isAllDay && (
+          {availabilityData.isAllDay ? (
+            <View style={styles.allDayContainer}>
+              <View style={styles.allDayIndicator}>
+                <Text style={styles.allDayIndicatorText}>
+                  🕐 Available 24/7 on selected dates
+                </Text>
+                <Text style={styles.allDayDescription}>
+                  Your vehicle will be available for booking at any time on the selected dates
+                </Text>
+              </View>
+            </View>
+          ) : (
             <>
               {localTimeSlots.map((slot, index) => (
                 <View key={index} style={styles.timeSlotContainer}>
@@ -439,9 +482,35 @@ const Step5Availability: React.FC<Step5AvailabilityProps> = ({
                   </View>
                 </View>
               ))}
+
+              <TouchableOpacity
+                style={styles.addTimeSlotButton}
+                onPress={addTimeSlot}
+              >
+                <Plus size={16} color="#059669" />
+                <Text style={styles.addTimeSlotText}>Add Time Slot</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
+
+        {/* Summary */}
+        {availabilityData.specificDates.length > 0 && (
+          <View style={styles.summaryContainer}>
+            <Text style={styles.summaryTitle}>Availability Summary</Text>
+            <View style={styles.summaryContent}>
+              <Text style={styles.summaryText}>
+                📅 {availabilityData.specificDates.length} dates selected
+              </Text>
+              <Text style={styles.summaryText}>
+                ⏰ {availabilityData.isAllDay ? '24 hours' : `${localTimeSlots.length} time slot${localTimeSlots.length > 1 ? 's' : ''}`}
+              </Text>
+              <Text style={styles.summaryText}>
+                🚗 Total booking slots: {availabilityData.timeSlots.length}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
 
       {renderTimeModal()}
@@ -604,6 +673,28 @@ const styles = StyleSheet.create({
   allDayText: {
     fontSize: 14,
     color: '#374151',
+    fontWeight: '500',
+  },
+  allDayContainer: {
+    marginTop: 8,
+  },
+  allDayIndicator: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  allDayIndicatorText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1E40AF',
+    marginBottom: 4,
+  },
+  allDayDescription: {
+    fontSize: 14,
+    color: '#1E40AF',
+    opacity: 0.8,
   },
   timeSlotContainer: {
     marginBottom: 12,
@@ -639,17 +730,40 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   addTimeSlotButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
     borderWidth: 1,
     borderColor: '#059669',
     borderStyle: 'dashed',
     borderRadius: 8,
+    gap: 8,
   },
   addTimeSlotText: {
     fontSize: 14,
     color: '#059669',
     fontWeight: '500',
+  },
+  summaryContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  summaryContent: {
+    gap: 8,
+  },
+  summaryText: {
+    fontSize: 14,
+    color: '#374151',
   },
   modalOverlay: {
     flex: 1,

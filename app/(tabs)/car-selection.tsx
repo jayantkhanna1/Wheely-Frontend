@@ -1,17 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  SafeAreaView, 
-  Image, 
-  Modal, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  Image,
+  Modal,
   FlatList,
   Animated,
   Dimensions,
   TextInput,
+  Alert,
   TouchableWithoutFeedback
 } from 'react-native';
 import { ArrowLeft, MapPin, Calendar, Clock, Filter, ArrowUpDown, Star, Fuel, Users, Settings, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3 } from 'lucide-react-native';
@@ -20,6 +21,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SlideMenu } from '../../components/SlideMenu';
+import { useLocalSearchParams } from 'expo-router';
 
 interface UserData {
   id: number;
@@ -69,7 +71,6 @@ interface MenuItem {
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function CarSelectionScreen() {
-  const [location, setLocation] = useState('Saket Colony, Delhi');
   const [tripStart, setTripStart] = useState(new Date());
   const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
   const [showFilters, setShowFilters] = useState(false);
@@ -81,33 +82,34 @@ export default function CarSelectionScreen() {
   const [startPickerMode, setStartPickerMode] = useState<'date' | 'time'>('date');
   const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
   const [editingField, setEditingField] = useState<'start' | 'end' | null>(null);
-  const [tempLocation, setTempLocation] = useState(location);
   const [showMenu, setShowMenu] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const sortSlideAnim = useRef(new Animated.Value(screenWidth)).current;
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
 
+  const { location, tripStartDate, tripEndDate, tripStartTime, tripEndTime } = useLocalSearchParams();
+
   const [userData, setUserData] = useState<UserData | null>(null);
-  
-    useEffect(() => {
-      loadUserData();
-    }, []);
-  
-    const loadUserData = async () => {
-      try {
-        const storedUserData = await AsyncStorage.getItem('user_data');
-        if (storedUserData) {
-          const parsedUserData = JSON.parse(storedUserData);
-          setUserData(parsedUserData);
-          console.log('User data loaded:', parsedUserData);
-        } else {
-          console.log('No user data found in storage');
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
       }
-    };
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
 
   const [filters, setFilters] = useState<FilterOption[]>([
     { id: 'model2020+', label: 'Model 2020+', selected: true },
@@ -272,6 +274,38 @@ export default function CarSelectionScreen() {
     },
   ];
 
+  const searchVehicles = async () => {
+    // call backend function /search/vehicles with query
+    // Simulate API call tripStartDate, tripEndDate, tripStartTime, tripEndTime
+    const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicles/?vehicle_type=4_wheeler&location=${location}&start_date=${tripStartDate}&end_date=${tripEndDate}&start_time=${tripStartTime}&end_time=${tripEndTime}`;
+    console.log(apiURL)
+    const response = await fetch(apiURL, {
+      method: 'GET',
+      headers: {},
+    });
+
+    console.log('API Response Status:', response.status);
+
+    if (response.status === 201) {
+      const data = await response.json();
+      console.log('API Response Data:', data);
+      if (data.vehicles && data.vehicles.length > 0) {
+        // Handle successful vehicle search
+      }
+      else{
+        
+      }
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API Error Response:', errorData);
+      Alert.alert(
+        'Error',
+        errorData.error || errorData.message || `Failed to submit vehicle. Status: ${response.status}`,
+        [{ text: 'OK' }]
+      );
+    }
+  }
+
   const formatDateTime = (date: Date, type: 'date' | 'time') => {
     if (type === 'date') {
       return date.toLocaleDateString('en-US', {
@@ -382,8 +416,8 @@ export default function CarSelectionScreen() {
   };
 
   const toggleFilter = (filterId: string) => {
-    setFilters(prev => prev.map(filter => 
-      filter.id === filterId 
+    setFilters(prev => prev.map(filter =>
+      filter.id === filterId
         ? { ...filter, selected: !filter.selected }
         : filter
     ));
@@ -404,16 +438,6 @@ export default function CarSelectionScreen() {
   const getSelectedSortLabel = () => {
     const selected = sortOptions.find(option => option.selected);
     return selected ? selected.label : 'Sort';
-  };
-
-  const handleLocationEdit = () => {
-    setTempLocation(location);
-    setShowLocationEdit(true);
-  };
-
-  const saveLocationEdit = () => {
-    setLocation(tempLocation);
-    setShowLocationEdit(false);
   };
 
   const handleDateTimeEdit = (field: 'start' | 'end') => {
@@ -445,34 +469,34 @@ export default function CarSelectionScreen() {
           <Text style={styles.carBadgeText}>{item.year}</Text>
         </View>
       </View>
-      
+
       <View style={styles.carInfo}>
         <View style={styles.carHeader}>
           <Text style={styles.carName}>{item.name} {item.year}</Text>
           <Text style={styles.carPrice}>₹{item.price}/hr</Text>
         </View>
-        
+
         <Text style={styles.carModel}>{item.features.join(' • ')}</Text>
-        
+
         <View style={styles.carDetails}>
           <View style={styles.carDetailItem}>
             <Star size={14} color="#FFA500" fill="#FFA500" />
             <Text style={styles.carDetailText}>{item.rating}</Text>
           </View>
-          
+
           <View style={styles.carDetailItem}>
             <MapPin size={14} color="#6B7280" />
             <Text style={styles.carDetailText}>{item.distance}</Text>
           </View>
         </View>
-        
+
         <Text style={styles.carPriceDetail}>₹{(item.price * 0.8).toFixed(0)} excluding taxes</Text>
       </View>
     </TouchableOpacity>
   );
 
   const renderFilterOption = ({ item }: { item: FilterOption }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.filterOption, item.selected && styles.filterOptionSelected]}
       onPress={() => toggleFilter(item.id)}
     >
@@ -483,7 +507,7 @@ export default function CarSelectionScreen() {
   );
 
   const renderSortOption = ({ item }: { item: SortOption }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.sortOption, item.selected && styles.sortOptionSelected]}
       onPress={() => selectSortOption(item.id)}
     >
@@ -510,9 +534,8 @@ export default function CarSelectionScreen() {
 
       {/* Trip Details - Editable */}
       <View style={styles.tripDetails}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.locationSection}
-          onPress={handleLocationEdit}
         >
           <Text style={styles.sectionLabel}>Location</Text>
           <View style={styles.locationRow}>
@@ -523,19 +546,13 @@ export default function CarSelectionScreen() {
         </TouchableOpacity>
 
         <View style={styles.dateTimeSection}>
-          <TouchableOpacity 
-            style={styles.dateTimeItem}
-            onPress={() => handleDateTimeEdit('start')}
-          >
+          <TouchableOpacity style={styles.dateTimeItem}>
             <Text style={styles.dateTimeLabel}>{formatDateTime(tripStart, 'date')}</Text>
             <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
             <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.dateTimeItem}
-            onPress={() => handleDateTimeEdit('end')}
-          >
+
+          <TouchableOpacity style={styles.dateTimeItem}>
             <Text style={styles.dateTimeLabel}>{formatDateTime(tripEnd, 'date')}</Text>
             <Text style={styles.dateTimeValue}>{formatDateTime(tripEnd, 'time')}</Text>
             <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
@@ -561,8 +578,8 @@ export default function CarSelectionScreen() {
           )}
         </TouchableOpacity>
 
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterTagsContainer}
           contentContainerStyle={styles.filterTagsContent}
@@ -600,9 +617,9 @@ export default function CarSelectionScreen() {
                 <X size={20} color="#000000" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modeToggleContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
                 onPress={() => setStartPickerMode('date')}
               >
@@ -611,7 +628,7 @@ export default function CarSelectionScreen() {
                   Date
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
                 onPress={() => setStartPickerMode('time')}
               >
@@ -644,9 +661,9 @@ export default function CarSelectionScreen() {
                 <X size={20} color="#000000" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modeToggleContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
                 onPress={() => setEndPickerMode('date')}
               >
@@ -655,7 +672,7 @@ export default function CarSelectionScreen() {
                   Date
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
                 onPress={() => setEndPickerMode('time')}
               >
@@ -679,54 +696,6 @@ export default function CarSelectionScreen() {
         </View>
       )}
 
-      {/* Location Edit Modal */}
-      <Modal
-        visible={showLocationEdit}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowLocationEdit(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowLocationEdit(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.locationEditModal}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Edit Location</Text>
-                  <TouchableOpacity onPress={() => setShowLocationEdit(false)}>
-                    <X size={24} color="#000000" />
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.locationEditContent}>
-                  <TextInput
-                    style={styles.locationEditInput}
-                    value={tempLocation}
-                    onChangeText={setTempLocation}
-                    placeholder="Enter location"
-                    autoFocus={true}
-                  />
-                  
-                  <View style={styles.locationEditButtons}>
-                    <TouchableOpacity 
-                      style={styles.cancelButton}
-                      onPress={() => setShowLocationEdit(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.saveButton}
-                      onPress={saveLocationEdit}
-                    >
-                      <Text style={styles.saveButtonText}>Save</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
       {/* Filters Modal - Scrollable */}
       <Modal
         visible={showFilters}
@@ -737,7 +706,7 @@ export default function CarSelectionScreen() {
         <TouchableWithoutFeedback onPress={closeFilters}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.filterModal,
                   { transform: [{ translateX: slideAnim }] }
@@ -749,7 +718,7 @@ export default function CarSelectionScreen() {
                     <X size={24} color="#000000" />
                   </TouchableOpacity>
                 </View>
-                
+
                 <FlatList
                   data={filters}
                   renderItem={renderFilterOption}
@@ -757,7 +726,7 @@ export default function CarSelectionScreen() {
                   style={styles.filterList}
                   showsVerticalScrollIndicator={false}
                 />
-                
+
                 <View style={styles.modalFooter}>
                   <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
                     <Text style={styles.applyButtonText}>Apply Filters</Text>
@@ -779,7 +748,7 @@ export default function CarSelectionScreen() {
         <TouchableWithoutFeedback onPress={closeSort}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.sortModal,
                   { transform: [{ translateX: sortSlideAnim }] }
@@ -791,7 +760,7 @@ export default function CarSelectionScreen() {
                     <X size={24} color="#000000" />
                   </TouchableOpacity>
                 </View>
-                
+
                 <FlatList
                   data={sortOptions}
                   renderItem={renderSortOption}
@@ -804,12 +773,12 @@ export default function CarSelectionScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-<SlideMenu
-                visible={showMenu}
-                onClose={closeMenu}
-                userData={userData}
-                setUserData={setUserData}
-              />
+      <SlideMenu
+        visible={showMenu}
+        onClose={closeMenu}
+        userData={userData}
+        setUserData={setUserData}
+      />
     </SafeAreaView>
   );
 }
