@@ -86,7 +86,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'My Trips',
       icon: <MapIcon size={20} color="#374151" />,
       onPress: () => {
-        console.log('My Trips pressed');
+      router.push('/(tabs)/my-trips'); // or wherever you place this component
         // Add navigation logic here
         // router.push('/trips');
       }
@@ -105,7 +105,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'Contact Us',
       icon: <Phone size={20} color="#374151" />,
       onPress: () => {
-        console.log('Contact Us pressed');
+        router.push('/contact-us'); // or wherever you place this component
         // Add navigation logic here
         // router.push('/contact');
       }
@@ -115,7 +115,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'My Profile',
       icon: <User size={20} color="#374151" />,
       onPress: () => {
-        console.log('My Profile pressed');
+        router.push('/my-profile');
         // Add navigation logic here
         // router.push('/profile');
       }
@@ -125,7 +125,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'Rewards',
       icon: <Gift size={20} color="#374151" />,
       onPress: () => {
-        console.log('Rewards pressed');
+        router.push('/rewards');
         // Add navigation logic here
         // router.push('/rewards');
       }
@@ -135,7 +135,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'Offers',
       icon: <Percent size={20} color="#374151" />,
       onPress: () => {
-        console.log('Offers pressed');
+        router.push('/offers');
         // Add navigation logic here
         // router.push('/offers');
       }
@@ -145,7 +145,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'Helpline Support',
       icon: <HelpCircle size={20} color="#374151" />,
       onPress: () => {
-        console.log('Helpline Support pressed');
+        router.push('/helpline-support');
         // Add navigation logic here
         // router.push('/helpline');
       }
@@ -155,7 +155,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'Policies',
       icon: <FileText size={20} color="#374151" />,
       onPress: () => {
-        console.log('Policies pressed');
+        router.push('/policies');
         // Add navigation logic here
         // router.push('/policies');
       }
@@ -165,7 +165,7 @@ export const SlideMenu: React.FC<SlideMenuProps> = ({
       title: 'Language',
       icon: <Globe size={20} color="#374151" />,
       onPress: () => {
-        console.log('Language pressed');
+        router.push('/language');
         // Add navigation logic here
         // router.push('/language');
       }

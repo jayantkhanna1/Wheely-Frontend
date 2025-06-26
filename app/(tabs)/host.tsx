@@ -41,7 +41,7 @@ interface HostVehicle {
   id: string;
   name: string;
   image: string;
-  status: 'active' | 'inactive' | 'pending';
+  status: 'active' | 'inactive' ;
   earnings: string;
   rating: number;
   trips: number;
@@ -84,12 +84,6 @@ const HostScreen: React.FC = () => {
       amount: '₹1,45,670',
       subtitle: 'All time earnings',
       color: '#3B82F6',
-    },
-    {
-      title: 'Pending',
-      amount: '₹3,240',
-      subtitle: 'Processing payout',
-      color: '#F59E0B',
     },
   ];
 
@@ -278,7 +272,6 @@ const HostScreen: React.FC = () => {
     switch (status) {
       case 'active': return '#10B981';
       case 'inactive': return '#EF4444';
-      case 'pending': return '#F59E0B';
       default: return '#6B7280';
     }
   };
