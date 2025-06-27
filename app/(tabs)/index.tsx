@@ -7,9 +7,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HeaderWithProfile } from '../../components/HeaderWithProfile';
 import { SlideMenu } from '../../components/SlideMenu';
-// import * as Location from 'expo-location'; // uncomment when youn join google for location services
-
-// const GOOGLE_PLACES_API_KEY = 'YOUR_GOOGLE_PLACES_API_KEY';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 
 interface VehicleOption {
@@ -550,6 +548,7 @@ export default function HomeScreen() {
   );
 
   return (
+    <ScreenWrapper>
     <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
@@ -796,6 +795,7 @@ export default function HomeScreen() {
         />
       </SafeAreaView>
     </TouchableWithoutFeedback>
+  </ScreenWrapper>
   );
 }
 

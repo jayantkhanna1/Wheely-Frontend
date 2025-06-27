@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 const languages = ['English', 'Slovak', 'Hindi', 'Spanish'];
 
 export default function Language() {
   return (
-    <View style={styles.page}>
+    <ScreenWrapper>
+      <View style={styles.page}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <ArrowLeft size={24} color="#111827" />
@@ -24,6 +26,7 @@ export default function Language() {
         ))}
       </ScrollView>
     </View>
+    </ScreenWrapper>
   );
 }
 

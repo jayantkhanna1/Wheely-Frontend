@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 import Toast from '@/components/Toast';
 
 export default function ResetPasswordScreen() {
@@ -84,6 +85,7 @@ export default function ResetPasswordScreen() {
   };
 
   return (
+    <ScreenWrapper>
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -137,6 +139,7 @@ export default function ResetPasswordScreen() {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import Toast from '@/components/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 interface UserData {
   id: number;
   first_name: string;
@@ -129,6 +130,7 @@ const storeUserData = async (userData:UserData) => {
 
 
   return (
+    <ScreenWrapper>
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -210,6 +212,7 @@ const storeUserData = async (userData:UserData) => {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 

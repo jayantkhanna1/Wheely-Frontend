@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from '@/components/Toast';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 export default function VerifyEmailScreen() {
   const { email, customerId } = useLocalSearchParams();
@@ -62,7 +63,7 @@ export default function VerifyEmailScreen() {
 
   const handleVerifyEmail = async () => {
     const otpString = otp.join('');
-    
+
     if (otpString.length !== 6) {
       showToast('Please enter the complete 6-digit code', 'error');
       return;
@@ -73,12 +74,12 @@ export default function VerifyEmailScreen() {
     try {
       const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/verifyEmail/`;
       console.log('Making verification request to:', apiUrl);
-      
+
       const requestData = {
         email: email,
         otp: parseInt(otpString),
       };
-      
+
       console.log('Verification request data:', requestData);
 
       const response = await fetch(apiUrl, {
@@ -96,7 +97,7 @@ export default function VerifyEmailScreen() {
 
       if (response.ok && (data.message === "Email verified successfully" || data.success === true)) {
         showToast('Email verified successfully!', 'success');
-        
+
         // Store user data if it's returned in the response
         if (data.user) {
           console.log('Storing user data from verification response');
@@ -109,7 +110,7 @@ export default function VerifyEmailScreen() {
           // If no user data in response, try to get it from storage if available
           // This is a fallback in case the API doesn't return full user data
         }
-        
+
         setTimeout(() => {
           router.replace('/(tabs)');
         }, 1500);
@@ -124,7 +125,7 @@ export default function VerifyEmailScreen() {
       }
     } catch (error) {
       console.error('Verification error:', error);
-      
+
       if (error instanceof TypeError && error.message === 'Network request failed') {
         showToast('Cannot connect to server. Please check your internet connection.', 'error');
       } else {
@@ -146,11 +147,11 @@ export default function VerifyEmailScreen() {
     try {
       const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/resendOtp/`;
       console.log('Making resend OTP request to:', apiUrl);
-      
+
       const requestData = {
         user_id: parseInt(String(customerId)),
       };
-      
+
       console.log('Resend OTP request data:', requestData);
 
       const response = await fetch(apiUrl, {
@@ -177,7 +178,7 @@ export default function VerifyEmailScreen() {
       }
     } catch (error) {
       console.error('Resend OTP error:', error);
-      
+
       if (error instanceof TypeError && error.message === 'Network request failed') {
         showToast('Cannot connect to server. Please check your internet connection.', 'error');
       } else {
@@ -196,97 +197,99 @@ export default function VerifyEmailScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Toast {...toast} onHide={hideToast} />
-      
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={20} color="#000000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Verify your email 2 / 2</Text>
-      </View>
-
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressDot, styles.progressActive]} />
-        <View style={[styles.progressDot, styles.progressActive]} />
-        <View style={styles.progressDot} />
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+    <ScreenWrapper>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          <View style={styles.messageContainer}>
-            <Text style={styles.message}>
-              We just sent a 6-digit code to{'\n'}
-              <Text style={styles.email}>{email}</Text> enter it below:
-            </Text>
-          </View>
+        <Toast {...toast} onHide={hideToast} />
 
-          <View style={styles.otpContainer}>
-            <Text style={styles.codeLabel}>Verification Code</Text>
-            <View style={styles.otpInputContainer}>
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => (inputRefs.current[index] = ref)}
-                  style={[styles.otpInput, digit && styles.otpInputFilled]}
-                  value={digit}
-                  onChangeText={(value) => handleOtpChange(value, index)}
-                  onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
-                  keyboardType="numeric"
-                  maxLength={1}
-                  textAlign="center"
-                  autoFocus={index === 0}
-                  selectTextOnFocus
-                />
-              ))}
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
-            onPress={handleVerifyEmail}
-            disabled={loading}
-          >
-            <Text style={styles.verifyButtonText}>
-              {loading ? 'Verifying...' : 'Verify Email'}
-            </Text>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={20} color="#000000" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Verify your email 2 / 2</Text>
+        </View>
 
-          <TouchableOpacity 
-            style={styles.resendContainer} 
-            onPress={handleResendOTP}
-            disabled={resendLoading}
-          >
-            <Text style={styles.resendText}>
-              Didn't receive the code? <Text style={[styles.resendLink, resendLoading && styles.resendLinkDisabled]}>
-                {resendLoading ? 'Sending...' : 'Resend Code'}
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressDot, styles.progressActive]} />
+          <View style={[styles.progressDot, styles.progressActive]} />
+          <View style={styles.progressDot} />
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            <View style={styles.messageContainer}>
+              <Text style={styles.message}>
+                We just sent a 6-digit code to{'\n'}
+                <Text style={styles.email}>{email}</Text> enter it below:
               </Text>
-            </Text>
-          </TouchableOpacity>
+            </View>
 
-          <TouchableOpacity style={styles.changeEmailContainer} onPress={handleChangeEmail}>
-            <Text style={styles.changeEmailText}>
-              Wrong email? <Text style={styles.changeEmailLink}>Send to different email</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <View style={styles.otpContainer}>
+              <Text style={styles.codeLabel}>Verification Code</Text>
+              <View style={styles.otpInputContainer}>
+                {otp.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={(ref) => (inputRefs.current[index] = ref)}
+                    style={[styles.otpInput, digit && styles.otpInputFilled]}
+                    value={digit}
+                    onChangeText={(value) => handleOtpChange(value, index)}
+                    onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+                    keyboardType="numeric"
+                    maxLength={1}
+                    textAlign="center"
+                    autoFocus={index === 0}
+                    selectTextOnFocus
+                  />
+                ))}
+              </View>
+            </View>
 
-        <View style={styles.termsContainer}>
-          <Text style={styles.termsText}>
-            By using Wheely, you agree to the{'\n'}
-            <Text style={styles.termsLink}>Terms</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>.
-          </Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <TouchableOpacity
+              style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
+              onPress={handleVerifyEmail}
+              disabled={loading}
+            >
+              <Text style={styles.verifyButtonText}>
+                {loading ? 'Verifying...' : 'Verify Email'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.resendContainer}
+              onPress={handleResendOTP}
+              disabled={resendLoading}
+            >
+              <Text style={styles.resendText}>
+                Didn't receive the code? <Text style={[styles.resendLink, resendLoading && styles.resendLinkDisabled]}>
+                  {resendLoading ? 'Sending...' : 'Resend Code'}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.changeEmailContainer} onPress={handleChangeEmail}>
+              <Text style={styles.changeEmailText}>
+                Wrong email? <Text style={styles.changeEmailLink}>Send to different email</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.termsContainer}>
+            <Text style={styles.termsText}>
+              By using Wheely, you agree to the{'\n'}
+              <Text style={styles.termsLink}>Terms</Text> and <Text style={styles.termsLink}>Privacy Policy</Text>.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 

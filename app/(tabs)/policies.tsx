@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
-
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 const policies = [
   { title: 'Terms of Service', url: 'https://yourapp.com/terms' },
   { title: 'Privacy Policy', url: 'https://yourapp.com/privacy' },
@@ -11,6 +11,7 @@ const policies = [
 
 export default function Policies() {
   return (
+    <ScreenWrapper>
     <View style={styles.page}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -32,6 +33,7 @@ export default function Policies() {
         ))}
       </ScrollView>
     </View>
+    </ScreenWrapper>
   );
 }
 

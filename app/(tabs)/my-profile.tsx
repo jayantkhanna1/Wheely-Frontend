@@ -31,6 +31,7 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface UserData {
   id: number;
@@ -92,7 +93,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
             city: 'Bengaluru',
             state: 'Karnataka',
             pincode: '560001',
-            profile_image: null,
+            profile_image: "null",
             private_token: 'abc123xyz789',
             email_verified: true,
             phone_verified: false,
@@ -138,19 +139,19 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Update userData
       const updatedData = { ...userData, ...editedData } as UserData;
       setLocalUserData(updatedData);
-      
+
       // Update parent component if setUserData is provided
       if (setUserData) {
         setUserData(updatedData);
       }
-      
+
       // Save to AsyncStorage
       await AsyncStorage.setItem('user_data', JSON.stringify(updatedData));
-      
+
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully!');
     } catch (error) {
@@ -166,8 +167,8 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
       'A verification link will be sent to your email address.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Send', 
+        {
+          text: 'Send',
           onPress: () => {
             Alert.alert('Success', 'Verification email sent!');
           }
@@ -182,8 +183,8 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
       'A verification code will be sent to your phone number.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Send', 
+        {
+          text: 'Send',
           onPress: () => {
             Alert.alert('Success', 'Verification code sent!');
           }
@@ -205,7 +206,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
   };
 
   const renderVerificationStatus = (isVerified: boolean, label: string, onPress?: () => void) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.verificationItem, isVerified && styles.verifiedItem]}
       onPress={onPress}
       disabled={isVerified}
@@ -270,7 +271,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={styles.errorText}>Unable to load profile data</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
               setInitialLoading(true);
@@ -285,172 +286,174 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Profile</Text>
-        <TouchableOpacity 
-          style={styles.editButton}
-          onPress={isEditing ? handleCancel : handleEdit}
-        >
-          {isEditing ? (
-            <X size={20} color="#EF4444" />
-          ) : (
-            <Edit3 size={20} color="#059669" />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Picture Section */}
-        <View style={styles.profileSection}>
-          <TouchableOpacity 
-            style={styles.profileImageContainer}
-            onPress={() => setShowImageModal(true)}
+    <ScreenWrapper>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
           >
-            {userData.profile_image ? (
-              <Image source={{ uri: userData.profile_image }} style={styles.profileImage} />
-            ) : (
-              <View style={styles.profilePlaceholder}>
-                <Text style={styles.profileInitials}>{getUserInitials()}</Text>
-              </View>
-            )}
-            <View style={styles.cameraIcon}>
-              <Camera size={16} color="#FFFFFF" />
-            </View>
+            <ArrowLeft size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.profileName}>
-            {userData.first_name} {userData.last_name}
-          </Text>
-          <Text style={styles.profileEmail}>{userData.email}</Text>
-        </View>
-
-        {/* Verification Status */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Verification Status</Text>
-          <View style={styles.verificationContainer}>
-            {renderVerificationStatus(
-              userData.email_verified,
-              'Email Verification',
-              !userData.email_verified ? handleVerifyEmail : undefined
-            )}
-            {renderVerificationStatus(
-              userData.phone_verified,
-              'Phone Verification',
-              !userData.phone_verified ? handleVerifyPhone : undefined
-            )}
-            {renderVerificationStatus(
-              userData.driving_license_verified,
-              'Driving License',
-              !userData.driving_license_verified ? handleUploadLicense : undefined
-            )}
-          </View>
-        </View>
-
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          {renderInputField('first_name', 'First Name', <User size={16} color="#6B7280" />, 'Enter first name')}
-          {renderInputField('last_name', 'Last Name', <User size={16} color="#6B7280" />, 'Enter last name')}
-          {renderInputField('email', 'Email', <Mail size={16} color="#6B7280" />, 'Enter email address', 'email-address')}
-          {renderInputField('phone', 'Phone Number', <Phone size={16} color="#6B7280" />, 'Enter phone number', 'phone-pad')}
-          {renderInputField('date_of_birth', 'Date of Birth', <Calendar size={16} color="#6B7280" />, 'DD/MM/YYYY')}
-        </View>
-
-        {/* Address Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address Information</Text>
-          {renderInputField('address', 'Address', <MapPin size={16} color="#6B7280" />, 'Enter your address')}
-          {renderInputField('city', 'City', <MapPin size={16} color="#6B7280" />, 'Enter city')}
-          {renderInputField('state', 'State', <MapPin size={16} color="#6B7280" />, 'Enter state')}
-          {renderInputField('pincode', 'Pincode', <MapPin size={16} color="#6B7280" />, 'Enter pincode', 'numeric')}
-        </View>
-
-        {/* Account Security */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Security</Text>
-          <TouchableOpacity style={styles.securityItem}>
-            <Shield size={20} color="#6B7280" />
-            <Text style={styles.securityText}>Change Password</Text>
-            <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.securityItem}>
-            <Eye size={20} color="#6B7280" />
-            <Text style={styles.securityText}>Privacy Settings</Text>
-            <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Account Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>User ID</Text>
-            <Text style={styles.infoValue}>{userData.id}</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Member Since</Text>
-            <Text style={styles.infoValue}>
-              {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'June 2025'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Save Button */}
-        {isEditing && (
-          <TouchableOpacity 
-            style={[styles.saveButton, loading && styles.disabledButton]}
-            onPress={handleSave}
-            disabled={loading}
+          <Text style={styles.headerTitle}>My Profile</Text>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={isEditing ? handleCancel : handleEdit}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+            {isEditing ? (
+              <X size={20} color="#EF4444" />
             ) : (
-              <>
-                <Save size={16} color="#FFFFFF" />
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </>
+              <Edit3 size={20} color="#059669" />
             )}
           </TouchableOpacity>
-        )}
+        </View>
 
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-
-      {/* Profile Image Modal */}
-      <Modal
-        visible={showImageModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowImageModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.imageModal}>
-            <Text style={styles.modalTitle}>Change Profile Picture</Text>
-            <TouchableOpacity style={styles.modalOption}>
-              <Camera size={20} color="#374151" />
-              <Text style={styles.modalOptionText}>Take Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalOption}>
-              <Image style={{ width: 20, height: 20 }} />
-              <Text style={styles.modalOptionText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.modalCancel}
-              onPress={() => setShowImageModal(false)}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Profile Picture Section */}
+          <View style={styles.profileSection}>
+            <TouchableOpacity
+              style={styles.profileImageContainer}
+              onPress={() => setShowImageModal(true)}
             >
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              {userData.profile_image ? (
+                <Image source={{ uri: userData.profile_image }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.profilePlaceholder}>
+                  <Text style={styles.profileInitials}>{getUserInitials()}</Text>
+                </View>
+              )}
+              <View style={styles.cameraIcon}>
+                <Camera size={16} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.profileName}>
+              {userData.first_name} {userData.last_name}
+            </Text>
+            <Text style={styles.profileEmail}>{userData.email}</Text>
+          </View>
+
+          {/* Verification Status */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Verification Status</Text>
+            <View style={styles.verificationContainer}>
+              {renderVerificationStatus(
+                userData.email_verified,
+                'Email Verification',
+                !userData.email_verified ? handleVerifyEmail : undefined
+              )}
+              {renderVerificationStatus(
+                userData.phone_verified,
+                'Phone Verification',
+                !userData.phone_verified ? handleVerifyPhone : undefined
+              )}
+              {renderVerificationStatus(
+                userData.driving_license_verified,
+                'Driving License',
+                !userData.driving_license_verified ? handleUploadLicense : undefined
+              )}
+            </View>
+          </View>
+
+          {/* Personal Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Personal Information</Text>
+            {renderInputField('first_name', 'First Name', <User size={16} color="#6B7280" />, 'Enter first name')}
+            {renderInputField('last_name', 'Last Name', <User size={16} color="#6B7280" />, 'Enter last name')}
+            {renderInputField('email', 'Email', <Mail size={16} color="#6B7280" />, 'Enter email address', 'email-address')}
+            {renderInputField('phone', 'Phone Number', <Phone size={16} color="#6B7280" />, 'Enter phone number', 'phone-pad')}
+            {renderInputField('date_of_birth', 'Date of Birth', <Calendar size={16} color="#6B7280" />, 'DD/MM/YYYY')}
+          </View>
+
+          {/* Address Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Address Information</Text>
+            {renderInputField('address', 'Address', <MapPin size={16} color="#6B7280" />, 'Enter your address')}
+            {renderInputField('city', 'City', <MapPin size={16} color="#6B7280" />, 'Enter city')}
+            {renderInputField('state', 'State', <MapPin size={16} color="#6B7280" />, 'Enter state')}
+            {renderInputField('pincode', 'Pincode', <MapPin size={16} color="#6B7280" />, 'Enter pincode', 'numeric')}
+          </View>
+
+          {/* Account Security */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account Security</Text>
+            <TouchableOpacity style={styles.securityItem}>
+              <Shield size={20} color="#6B7280" />
+              <Text style={styles.securityText}>Change Password</Text>
+              <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.securityItem}>
+              <Eye size={20} color="#6B7280" />
+              <Text style={styles.securityText}>Privacy Settings</Text>
+              <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+
+          {/* Account Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account Information</Text>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>User ID</Text>
+              <Text style={styles.infoValue}>{userData.id}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Member Since</Text>
+              <Text style={styles.infoValue}>
+                {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'June 2025'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Save Button */}
+          {isEditing && (
+            <TouchableOpacity
+              style={[styles.saveButton, loading && styles.disabledButton]}
+              onPress={handleSave}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Save size={16} color="#FFFFFF" />
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+
+        {/* Profile Image Modal */}
+        <Modal
+          visible={showImageModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowImageModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.imageModal}>
+              <Text style={styles.modalTitle}>Change Profile Picture</Text>
+              <TouchableOpacity style={styles.modalOption}>
+                <Camera size={20} color="#374151" />
+                <Text style={styles.modalOptionText}>Take Photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalOption}>
+                <Image style={{ width: 20, height: 20 }} />
+                <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setShowImageModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, CreditCard, Smartphone, Building2, Wallet, ChevronRight, Clock } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface PaymentMethod {
   id: string;
@@ -156,6 +157,7 @@ export default function PaymentScreen() {
   };
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -299,6 +301,7 @@ export default function PaymentScreen() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

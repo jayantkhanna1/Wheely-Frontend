@@ -21,6 +21,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SlideMenu } from '../../components/SlideMenu';
 import { HeaderWithProfile } from '../../components/HeaderWithProfile';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface Bike {
   id: string;
@@ -499,6 +500,8 @@ export default function BikeSelectionScreen() {
   );
 
   return (
+
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -815,6 +818,7 @@ export default function BikeSelectionScreen() {
           setUserData={setUserData}
         />
     </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

@@ -5,13 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  SafeAreaView,
   Linking,
 } from 'react-native';
 import { ArrowLeft, Phone, MessageCircle, HelpCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 export default function HelplineSupport() {
   return (
+    <ScreenWrapper>
+    <SafeAreaView style={styles.container}>
     <View style={styles.page}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -47,10 +51,16 @@ export default function HelplineSupport() {
         </TouchableOpacity>
       </ScrollView>
     </View>
+    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   page: {
     flex: 1,
     backgroundColor: '#FFFFFF',
