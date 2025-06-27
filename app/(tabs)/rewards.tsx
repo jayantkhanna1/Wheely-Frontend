@@ -19,6 +19,7 @@ import {
   Target,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 const { width } = Dimensions.get('window');
 
@@ -108,156 +109,158 @@ export default function RewardsPage() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Rewards</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <ScreenWrapper>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Rewards</Text>
+          <View style={styles.placeholder} />
+        </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Points Card */}
-        <View style={styles.pointsCard}>
-          <View style={styles.pointsHeader}>
-            <View style={styles.pointsIconContainer}>
-              <Coins size={32} color="#FFFFFF" />
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Points Card */}
+          <View style={styles.pointsCard}>
+            <View style={styles.pointsHeader}>
+              <View style={styles.pointsIconContainer}>
+                <Coins size={32} color="#FFFFFF" />
+              </View>
+              <View style={styles.pointsInfo}>
+                <Text style={styles.pointsLabel}>Your Points</Text>
+                <Text style={styles.pointsValue}>{userPoints.toLocaleString()}</Text>
+              </View>
             </View>
-            <View style={styles.pointsInfo}>
-              <Text style={styles.pointsLabel}>Your Points</Text>
-              <Text style={styles.pointsValue}>{userPoints.toLocaleString()}</Text>
+            <Text style={styles.pointsSubtext}>
+              Keep riding to earn more points and unlock amazing rewards!
+            </Text>
+          </View>
+
+          {/* How to Earn Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>How to Earn Points</Text>
+            <View style={styles.earnGrid}>
+              <View style={styles.earnCard}>
+                <Target size={20} color="#059669" />
+                <Text style={styles.earnTitle}>Complete Rides</Text>
+                <Text style={styles.earnPoints}>+10 points per ride</Text>
+              </View>
+              <View style={styles.earnCard}>
+                <Users size={20} color="#059669" />
+                <Text style={styles.earnTitle}>Refer Friends</Text>
+                <Text style={styles.earnPoints}>+100 points each</Text>
+              </View>
+              <View style={styles.earnCard}>
+                <Calendar size={20} color="#059669" />
+                <Text style={styles.earnTitle}>Daily Check-in</Text>
+                <Text style={styles.earnPoints}>+5 points daily</Text>
+              </View>
+              <View style={styles.earnCard}>
+                <Star size={20} color="#059669" />
+                <Text style={styles.earnTitle}>Rate Rides</Text>
+                <Text style={styles.earnPoints}>+2 points each</Text>
+              </View>
             </View>
           </View>
-          <Text style={styles.pointsSubtext}>
-            Keep riding to earn more points and unlock amazing rewards!
-          </Text>
-        </View>
 
-        {/* How to Earn Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How to Earn Points</Text>
-          <View style={styles.earnGrid}>
-            <View style={styles.earnCard}>
-              <Target size={20} color="#059669" />
-              <Text style={styles.earnTitle}>Complete Rides</Text>
-              <Text style={styles.earnPoints}>+10 points per ride</Text>
-            </View>
-            <View style={styles.earnCard}>
-              <Users size={20} color="#059669" />
-              <Text style={styles.earnTitle}>Refer Friends</Text>
-              <Text style={styles.earnPoints}>+100 points each</Text>
-            </View>
-            <View style={styles.earnCard}>
-              <Calendar size={20} color="#059669" />
-              <Text style={styles.earnTitle}>Daily Check-in</Text>
-              <Text style={styles.earnPoints}>+5 points daily</Text>
-            </View>
-            <View style={styles.earnCard}>
-              <Star size={20} color="#059669" />
-              <Text style={styles.earnTitle}>Rate Rides</Text>
-              <Text style={styles.earnPoints}>+2 points each</Text>
-            </View>
+          {/* Tabs */}
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'available' && styles.activeTab]}
+              onPress={() => setActiveTab('available')}
+            >
+              <Text style={[
+                styles.tabText,
+                activeTab === 'available' && styles.activeTabText
+              ]}>
+                Available Rewards
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+              onPress={() => setActiveTab('history')}
+            >
+              <Text style={[
+                styles.tabText,
+                activeTab === 'history' && styles.activeTabText
+              ]}>
+                History
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'available' && styles.activeTab]}
-            onPress={() => setActiveTab('available')}
-          >
-            <Text style={[
-              styles.tabText, 
-              activeTab === 'available' && styles.activeTabText
-            ]}>
-              Available Rewards
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-            onPress={() => setActiveTab('history')}
-          >
-            <Text style={[
-              styles.tabText, 
-              activeTab === 'history' && styles.activeTabText
-            ]}>
-              History
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content based on active tab */}
-        {activeTab === 'available' ? (
-          <View style={styles.rewardsContainer}>
-            {availableRewards.map((reward) => (
-              <View key={reward.id} style={styles.rewardCard}>
-                <View style={styles.rewardHeader}>
-                  <View style={styles.rewardIcon}>
-                    {reward.icon}
-                  </View>
-                  <View style={styles.rewardInfo}>
-                    <Text style={styles.rewardTitle}>{reward.title}</Text>
-                    <Text style={styles.rewardDescription}>{reward.description}</Text>
-                    <View style={styles.rewardMeta}>
-                      <View style={[
-                        styles.typeBadge, 
-                        { backgroundColor: getTypeColor(reward.type) }
-                      ]}>
-                        <Text style={styles.typeBadgeText}>
-                          {reward.type.toUpperCase()}
-                        </Text>
+          {/* Content based on active tab */}
+          {activeTab === 'available' ? (
+            <View style={styles.rewardsContainer}>
+              {availableRewards.map((reward) => (
+                <View key={reward.id} style={styles.rewardCard}>
+                  <View style={styles.rewardHeader}>
+                    <View style={styles.rewardIcon}>
+                      {reward.icon}
+                    </View>
+                    <View style={styles.rewardInfo}>
+                      <Text style={styles.rewardTitle}>{reward.title}</Text>
+                      <Text style={styles.rewardDescription}>{reward.description}</Text>
+                      <View style={styles.rewardMeta}>
+                        <View style={[
+                          styles.typeBadge,
+                          { backgroundColor: getTypeColor(reward.type) }
+                        ]}>
+                          <Text style={styles.typeBadgeText}>
+                            {reward.type.toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={styles.expiryText}>Expires in {reward.expiryDate}</Text>
                       </View>
-                      <Text style={styles.expiryText}>Expires in {reward.expiryDate}</Text>
                     </View>
                   </View>
+                  <View style={styles.rewardAction}>
+                    <Text style={styles.pointsRequired}>{reward.points} pts</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.redeemButton,
+                        userPoints < reward.points && styles.redeemButtonDisabled
+                      ]}
+                      onPress={() => handleRedeem(reward)}
+                      disabled={userPoints < reward.points}
+                    >
+                      <Text style={[
+                        styles.redeemButtonText,
+                        userPoints < reward.points && styles.redeemButtonTextDisabled
+                      ]}>
+                        {userPoints >= reward.points ? 'Redeem' : 'Not Enough'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={styles.rewardAction}>
-                  <Text style={styles.pointsRequired}>{reward.points} pts</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.redeemButton,
-                      userPoints < reward.points && styles.redeemButtonDisabled
-                    ]}
-                    onPress={() => handleRedeem(reward)}
-                    disabled={userPoints < reward.points}
-                  >
-                    <Text style={[
-                      styles.redeemButtonText,
-                      userPoints < reward.points && styles.redeemButtonTextDisabled
-                    ]}>
-                      {userPoints >= reward.points ? 'Redeem' : 'Not Enough'}
-                    </Text>
-                  </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.historyContainer}>
+              {rewardHistory.map((item) => (
+                <View key={item.id} style={styles.historyCard}>
+                  <View style={styles.historyInfo}>
+                    <Text style={styles.historyTitle}>{item.title}</Text>
+                    <Text style={styles.historyDate}>{item.date}</Text>
+                    <Text style={styles.historyPoints}>{item.points} points</Text>
+                  </View>
+                  <View style={[
+                    styles.statusBadge,
+                    { backgroundColor: item.status === 'Used' ? '#10B981' : '#EF4444' }
+                  ]}>
+                    <Text style={styles.statusText}>{item.status}</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.historyContainer}>
-            {rewardHistory.map((item) => (
-              <View key={item.id} style={styles.historyCard}>
-                <View style={styles.historyInfo}>
-                  <Text style={styles.historyTitle}>{item.title}</Text>
-                  <Text style={styles.historyDate}>{item.date}</Text>
-                  <Text style={styles.historyPoints}>{item.points} points</Text>
-                </View>
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: item.status === 'Used' ? '#10B981' : '#EF4444' }
-                ]}>
-                  <Text style={styles.statusText}>{item.status}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

@@ -2,9 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-
+import { ScreenWrapper } from '../components/ScreenWrapper';
 export default function CreateAccountScreen() {
   return (
+    <ScreenWrapper>
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push('/')} style={styles.backButton}>
@@ -58,6 +59,7 @@ export default function CreateAccountScreen() {
         </View>
       </View>
     </View>
+    </ScreenWrapper>
   );
 }
 

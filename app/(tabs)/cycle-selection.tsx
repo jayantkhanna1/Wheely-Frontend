@@ -20,6 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SlideMenu } from '../../components/SlideMenu';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface UserData {
   id: number;
@@ -496,6 +497,7 @@ const [userData, setUserData] = useState<UserData | null>(null);
   );
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -811,6 +813,7 @@ const [userData, setUserData] = useState<UserData | null>(null);
                       setUserData={setUserData}
                     />
     </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

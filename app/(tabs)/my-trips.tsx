@@ -20,6 +20,7 @@ import {
   Filter,
   Search,
 } from 'lucide-react-native';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { router } from 'expo-router';
 
 interface Trip {
@@ -242,6 +243,7 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
   );
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -303,6 +305,7 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
         )}
       </ScrollView>
     </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

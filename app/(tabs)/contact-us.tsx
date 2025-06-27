@@ -18,6 +18,7 @@ import {
   HelpCircle,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 export default function ContactUsPage() {
   const handleCall = (phoneNumber: string) => {
@@ -33,6 +34,7 @@ export default function ContactUsPage() {
   };
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -156,6 +158,7 @@ export default function ContactUsPage() {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

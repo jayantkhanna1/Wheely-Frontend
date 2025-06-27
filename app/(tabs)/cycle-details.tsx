@@ -19,6 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SlideMenu } from '../../components/SlideMenu';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface UserData {
   id: number;
@@ -502,6 +503,7 @@ export default function CycleDetailsScreen() {
   };
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -784,6 +786,7 @@ export default function CycleDetailsScreen() {
                 setUserData={setUserData}
               />
     </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

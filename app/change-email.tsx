@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingVi
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import Toast from '@/components/Toast';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 export default function ChangeEmailScreen() {
   const { customerId } = useLocalSearchParams();
@@ -92,6 +93,7 @@ export default function ChangeEmailScreen() {
   };
 
   return (
+    <ScreenWrapper>
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -154,6 +156,7 @@ export default function ChangeEmailScreen() {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 

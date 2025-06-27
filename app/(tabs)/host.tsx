@@ -23,6 +23,7 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface EarningsCard {
   title: string;
@@ -278,6 +279,7 @@ const HostScreen: React.FC = () => {
   };
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -323,6 +325,7 @@ const HostScreen: React.FC = () => {
         {activeTab === 'earnings' && renderEarnings()}
       </ScrollView>
     </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

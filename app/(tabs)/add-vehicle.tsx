@@ -19,6 +19,7 @@ import Step3PricingLocation from '../../components/Step3PricingLocation';
 import Step4PhotosDocuments from '../../components/Step4PhotosDocuments';
 import Step5Availability from '../../components/Step5Availability';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 const AddVehicleScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -295,6 +296,7 @@ const AddVehicleScreen: React.FC = () => {
   };
 
   return (
+    <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -336,6 +338,7 @@ const AddVehicleScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

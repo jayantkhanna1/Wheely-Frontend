@@ -17,6 +17,7 @@ import Step2PricingLocation from '../../components/Step2PricingLocationBicycle';
 import Step3PhotosDocuments from '../../components/Step3PhotosDocumentsBicycle';
 import Step4Availability from '../../components/Step4AvailabilityBicycle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 const AddBicycleScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -230,47 +231,49 @@ const AddBicycleScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <ArrowLeft size={20} color="#374151" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Bicycle</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(currentStep / totalSteps) * 100}%` }]} />
-        </View>
-        <Text style={styles.progressText}>Step {currentStep} of {totalSteps}</Text>
-      </View>
-
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {renderCurrentStep()}
-      </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNavigation}>
-        {currentStep > 1 && (
-          <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
-            <Text style={styles.secondaryButtonText}>Previous</Text>
+    <ScreenWrapper>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <ArrowLeft size={20} color="#374151" />
           </TouchableOpacity>
-        )}
+          <Text style={styles.headerTitle}>Add Bicycle</Text>
+          <View style={styles.placeholder} />
+        </View>
 
-        <TouchableOpacity
-          style={[styles.primaryButton, currentStep === 1 && styles.fullWidthButton]}
-          onPress={currentStep === totalSteps ? submitForm : nextStep}
-        >
-          <Text style={styles.primaryButtonText}>
-            {currentStep === totalSteps ? 'Submit Bicycle' : 'Next'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${(currentStep / totalSteps) * 100}%` }]} />
+          </View>
+          <Text style={styles.progressText}>Step {currentStep} of {totalSteps}</Text>
+        </View>
+
+        {/* Content */}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {renderCurrentStep()}
+        </ScrollView>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNavigation}>
+          {currentStep > 1 && (
+            <TouchableOpacity style={styles.secondaryButton} onPress={prevStep}>
+              <Text style={styles.secondaryButtonText}>Previous</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[styles.primaryButton, currentStep === 1 && styles.fullWidthButton]}
+            onPress={currentStep === totalSteps ? submitForm : nextStep}
+          >
+            <Text style={styles.primaryButtonText}>
+              {currentStep === totalSteps ? 'Submit Bicycle' : 'Next'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

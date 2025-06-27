@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Gift, Percent, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +33,7 @@ const offersData = [
 
 export default function Offers() {
   return (
+    <ScreenWrapper>
     <View style={styles.pageContainer}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -62,6 +64,7 @@ export default function Offers() {
         </TouchableOpacity>
       </ScrollView>
     </View>
+    </ScreenWrapper>
   );
 }
 

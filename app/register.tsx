@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import Toast from '@/components/Toast';
 import DatePicker from '@/components/DatePicker';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 interface PasswordRequirement {
   text: string;
@@ -134,11 +135,12 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Toast {...toast} onHide={hideToast} />
+    <ScreenWrapper>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Toast {...toast} onHide={hideToast} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -275,6 +277,7 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
