@@ -643,178 +643,33 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
   return (
     <ScreenWrapper>
       <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.profileName}>
-            {userData.first_name} {userData.last_name}
-          </Text>
-          <Text style={styles.profileEmail}>{userData.email}</Text>
-        </View>
-
-        {/* Verification Status */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Verification Status</Text>
-          <View style={styles.verificationContainer}>
-            {renderVerificationStatus(
-              userData.email_verified,
-              'Email Verification',
-              !userData.email_verified ? handleVerifyEmail : undefined
-            )}
-            {renderVerificationStatus(
-              userData.phone_verified,
-              'Phone Verification',
-              !userData.phone_verified ? handleVerifyPhone : undefined
-            )}
-            {renderVerificationStatus(
-              userData.driving_license_verified,
-              'Driving License',
-              !userData.driving_license_verified ? handleUploadLicense : undefined
-            )}
-          </View>
-        </View>
-
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          {renderInputField('first_name', 'First Name', <User size={16} color="#6B7280" />, 'Enter first name')}
-          {renderInputField('last_name', 'Last Name', <User size={16} color="#6B7280" />, 'Enter last name')}
-          {renderInputField('email', 'Email', <Mail size={16} color="#6B7280" />, 'Enter email address', 'email-address')}
-          {renderInputField('phone', 'Phone Number', <Phone size={16} color="#6B7280" />, 'Enter phone number', 'phone-pad')}
-          {renderInputField('date_of_birth', 'Date of Birth', <Calendar size={16} color="#6B7280" />, 'DD/MM/YYYY')}
-        </View>
-
-        {/* Address Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address Information</Text>
-          {renderInputField('address', 'Address', <MapPin size={16} color="#6B7280" />, 'Enter your address', 'default', true)}
-          {renderInputField('city', 'City', <MapPin size={16} color="#6B7280" />, 'Enter city')}
-          {renderInputField('state', 'State', <MapPin size={16} color="#6B7280" />, 'Enter state')}
-          {renderInputField('pincode', 'Pincode', <MapPin size={16} color="#6B7280" />, 'Enter pincode', 'numeric')}
-        </View>
-
-        {/* Account Security */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Security</Text>
-          <TouchableOpacity 
-            style={styles.securityItem}
-            onPress={() => setShowPasswordModal(true)}
-          >
-            <Shield size={20} color="#6B7280" />
-            <Text style={styles.securityText}>Change Password</Text>
-            <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.securityItem}
-            onPress={() => setShowPrivacyModal(true)}
-          >
-            <Eye size={20} color="#6B7280" />
-            <Text style={styles.securityText}>Privacy Settings</Text>
-            <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Data & Account Management */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data & Account</Text>
-          <TouchableOpacity 
-            style={styles.securityItem}
-            onPress={handleDownloadData}
-          >
-            <Download size={20} color="#6B7280" />
-            <Text style={styles.securityText}>Download My Data</Text>
-            <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.securityItem}
-            onPress={handleLogout}
-          >
-            <LogOut size={20} color="#6B7280" />
-            <Text style={styles.securityText}>Logout</Text>
-            <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.securityItem, styles.dangerItem]}
-            onPress={handleDeleteAccount}
-          >
-            <Trash2 size={20} color="#EF4444" />
-            <Text style={[styles.securityText, styles.dangerText]}>Delete Account</Text>
-            <ArrowLeft size={16} color="#EF4444" style={{ transform: [{ rotate: '180deg' }] }} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Account Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Information</Text>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>User ID</Text>
-            <Text style={styles.infoValue}>{userData.id}</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Member Since</Text>
-            <Text style={styles.infoValue}>
-              {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'June 2025'}
-            </Text>
-          </View>
-         
-        </View>
-        {/* <View> */}
-        {/* Save Button */}
-        {isEditing && (
-          <TouchableOpacity 
-            style={[styles.saveButton, loading && styles.disabledButton]}
-            onPress={handleSave}
-            disabled={loading}
-          >
-            {isEditing ? (
-              <X size={20} color="#EF4444" />
-            ) : (
-              <Edit3 size={20} color="#059669" />
-            )}
-          </TouchableOpacity>)}
-        <View style={styles.bottomSpacing} />
-
-      {/* Profile Image Modal */}
-      <Modal
-        visible={showImageModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowImageModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.imageModal}>
-            <Text style={styles.modalTitle}>Change Profile Picture</Text>
-            <TouchableOpacity 
-              style={styles.modalOption}
-              onPress={() => handleImageSelection('camera')}
+        <ScrollView style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
             >
-              <Camera size={20} color="#374151" />
-              <Text style={styles.modalOptionText}>Take Photo</Text>
+              <ArrowLeft size={24} color="#111827" />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.modalOption}
-              onPress={() => handleImageSelection('gallery')}
+            <Text style={styles.headerTitle}>My Profile</Text>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={isEditing ? handleCancel : handleEdit}
             >
-              <ImageIcon size={20} color="#374151" />
-              <Text style={styles.modalOptionText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-            {userData.profile_image && (
-              <TouchableOpacity 
-                style={[styles.modalOption, styles.removeOption]}
-                onPress={removeProfileImage}
-              >
+              {isEditing ? (
                 <X size={20} color="#EF4444" />
-                <Text style={[styles.modalOptionText, styles.removeOptionText]}>Remove Photo</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity 
-              style={styles.modalCancel}
-              onPress={() => setShowImageModal(false)}
+              ) : (
+                <Edit3 size={20} color="#059669" />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Profile Section */}
+          <View style={styles.profileSection}>
+            <TouchableOpacity
+              style={styles.profileImageContainer}
+              onPress={() => setShowImageModal(true)}
             >
               {userData.profile_image ? (
                 <Image source={{ uri: userData.profile_image }} style={styles.profileImage} />
@@ -868,7 +723,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
           {/* Address Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Address Information</Text>
-            {renderInputField('address', 'Address', <MapPin size={16} color="#6B7280" />, 'Enter your address')}
+            {renderInputField('address', 'Address', <MapPin size={16} color="#6B7280" />, 'Enter your address', 'default', true)}
             {renderInputField('city', 'City', <MapPin size={16} color="#6B7280" />, 'Enter city')}
             {renderInputField('state', 'State', <MapPin size={16} color="#6B7280" />, 'Enter state')}
             {renderInputField('pincode', 'Pincode', <MapPin size={16} color="#6B7280" />, 'Enter pincode', 'numeric')}
@@ -877,209 +732,319 @@ export const MyProfile: React.FC<MyProfileProps> = ({ userData: propUserData, se
           {/* Account Security */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Account Security</Text>
-            <TouchableOpacity style={styles.securityItem}>
+            <TouchableOpacity 
+              style={styles.securityItem}
+              onPress={() => setShowPasswordModal(true)}
+            >
               <Shield size={20} color="#6B7280" />
               <Text style={styles.securityText}>Change Password</Text>
               <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.securityItem}>
+            <TouchableOpacity 
+              style={styles.securityItem}
+              onPress={() => setShowPrivacyModal(true)}
+            >
               <Eye size={20} color="#6B7280" />
               <Text style={styles.securityText}>Privacy Settings</Text>
               <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
 
-      {/* Change Password Modal */}
-      <Modal
-        visible={showPasswordModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPasswordModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.passwordModal}>
-            <Text style={styles.modalTitle}>Change Password</Text>
-            <ScrollView style={styles.passwordContent}></ScrollView>
-            <Text style={styles.modalTitle}>Change Password</Text>
-            <ScrollView style={styles.passwordContent}>
-              
-              {/* Current Password */}
-              <View style={styles.passwordInputContainer}>
-                <Text style={styles.passwordLabel}>Current Password</Text>
-                <View style={styles.passwordInputWrapper}>
-                  <Lock size={16} color="#6B7280" />
-                  <TextInput
-                    style={styles.passwordInput}
-                    value={passwordData.currentPassword}
-                    onChangeText={(text) => setPasswordData({ ...passwordData, currentPassword: text })}
-                    placeholder="Enter current password"
-                    secureTextEntry={!showPasswords.current}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                  >
-                    {showPasswords.current ? (
-                      <EyeOff size={16} color="#6B7280" />
-                    ) : (
-                      <Eye size={16} color="#6B7280" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
+          {/* Data & Account Management */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Data & Account</Text>
+            <TouchableOpacity 
+              style={styles.securityItem}
+              onPress={handleDownloadData}
+            >
+              <Download size={20} color="#6B7280" />
+              <Text style={styles.securityText}>Download My Data</Text>
+              <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.securityItem}
+              onPress={handleLogout}
+            >
+              <LogOut size={20} color="#6B7280" />
+              <Text style={styles.securityText}>Logout</Text>
+              <ArrowLeft size={16} color="#6B7280" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.securityItem, styles.dangerItem]}
+              onPress={handleDeleteAccount}
+            >
+              <Trash2 size={20} color="#EF4444" />
+              <Text style={[styles.securityText, styles.dangerText]}>Delete Account</Text>
+              <ArrowLeft size={16} color="#EF4444" style={{ transform: [{ rotate: '180deg' }] }} />
+            </TouchableOpacity>
+          </View>
 
-              {/* New Password */}
-              <View style={styles.passwordInputContainer}>
-                <Text style={styles.passwordLabel}>New Password</Text>
-                <View style={styles.passwordInputWrapper}>
-                  <Lock size={16} color="#6B7280" />
-                  <TextInput
-                    style={styles.passwordInput}
-                    value={passwordData.newPassword}
-                    onChangeText={(text) => setPasswordData({ ...passwordData, newPassword: text })}
-                    placeholder="Enter new password"
-                    secureTextEntry={!showPasswords.new}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                  >
-                    {showPasswords.new ? (
-                      <EyeOff size={16} color="#6B7280" />
-                    ) : (
-                      <Eye size={16} color="#6B7280" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
+          {/* Account Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Account Information</Text>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>User ID</Text>
+              <Text style={styles.infoValue}>{userData.id}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Member Since</Text>
+              <Text style={styles.infoValue}>
+                {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'June 2025'}
+              </Text>
+            </View>
+          </View>
 
-              {/* Confirm Password */}
-              <View style={styles.passwordInputContainer}>
-                <Text style={styles.passwordLabel}>Confirm New Password</Text>
-                <View style={styles.passwordInputWrapper}>
-                  <Lock size={16} color="#6B7280" />
-                  <TextInput
-                    style={styles.passwordInput}
-                    value={passwordData.confirmPassword}
-                    onChangeText={(text) => setPasswordData({ ...passwordData, confirmPassword: text })}
-                    placeholder="Confirm new password"
-                    secureTextEntry={!showPasswords.confirm}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                  >
-                    {showPasswords.confirm ? (
-                      <EyeOff size={16} color="#6B7280" />
-                    ) : (
-                      <Eye size={16} color="#6B7280" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
+          {/* Save Button */}
+          {isEditing && (
+            <TouchableOpacity 
+              style={[styles.saveButton, loading && styles.disabledButton]}
+              onPress={handleSave}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Save size={20} color="#FFFFFF" />
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
-              {/* Password Requirements */}
-              <View style={styles.passwordRequirements}>
-                <Text style={styles.requirementsTitle}>Password Requirements:</Text>
-                <Text style={styles.requirementText}>• At least 8 characters long</Text>
-                <Text style={styles.requirementText}>• One uppercase letter</Text>
-                <Text style={styles.requirementText}>• One lowercase letter</Text>
-                <Text style={styles.requirementText}>• One number</Text>
-                <Text style={styles.requirementText}>• One special character (@$!%*?&)</Text>
-              </View>
-            </ScrollView>
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
 
-            <View style={styles.passwordModalActions}>
+        {/* Profile Image Modal */}
+        <Modal
+          visible={showImageModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowImageModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.imageModal}>
+              <Text style={styles.modalTitle}>Change Profile Picture</Text>
               <TouchableOpacity 
-                style={styles.passwordCancelButton}
-                onPress={() => setShowPasswordModal(false)}
+                style={styles.modalOption}
+                onPress={() => handleImageSelection('camera')}
               >
-                <Text style={styles.passwordCancelText}>Cancel</Text>
+                <Camera size={20} color="#374151" />
+                <Text style={styles.modalOptionText}>Take Photo</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.passwordSaveButton, passwordLoading && styles.disabledButton]}
-                onPress={handleChangePassword}
-                disabled={passwordLoading}
+                style={styles.modalOption}
+                onPress={() => handleImageSelection('gallery')}
               >
-                {passwordLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.passwordSaveText}>Change Password</Text>
+                <ImageIcon size={20} color="#374151" />
+                <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+              {userData.profile_image && (
+                <TouchableOpacity 
+                  style={[styles.modalOption, styles.removeOption]}
+                  onPress={removeProfileImage}
+                >
+                  <X size={20} color="#EF4444" />
+                  <Text style={[styles.modalOptionText, styles.removeOptionText]}>Remove Photo</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={styles.modalCancel}
+                onPress={() => setShowImageModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Change Password Modal */}
+        <Modal
+          visible={showPasswordModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowPasswordModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.passwordModal}>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <ScrollView style={styles.passwordContent}>
+                
+                {/* Current Password */}
+                <View style={styles.passwordInputContainer}>
+                  <Text style={styles.passwordLabel}>Current Password</Text>
+                  <View style={styles.passwordInputWrapper}>
+                    <Lock size={16} color="#6B7280" />
+                    <TextInput
+                      style={styles.passwordInput}
+                      value={passwordData.currentPassword}
+                      onChangeText={(text) => setPasswordData({ ...passwordData, currentPassword: text })}
+                      placeholder="Enter current password"
+                      secureTextEntry={!showPasswords.current}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                    >
+                      {showPasswords.current ? (
+                        <EyeOff size={16} color="#6B7280" />
+                      ) : (
+                        <Eye size={16} color="#6B7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* New Password */}
+                <View style={styles.passwordInputContainer}>
+                  <Text style={styles.passwordLabel}>New Password</Text>
+                  <View style={styles.passwordInputWrapper}>
+                    <Lock size={16} color="#6B7280" />
+                    <TextInput
+                      style={styles.passwordInput}
+                      value={passwordData.newPassword}
+                      onChangeText={(text) => setPasswordData({ ...passwordData, newPassword: text })}
+                      placeholder="Enter new password"
+                      secureTextEntry={!showPasswords.new}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                    >
+                      {showPasswords.new ? (
+                        <EyeOff size={16} color="#6B7280" />
+                      ) : (
+                        <Eye size={16} color="#6B7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Confirm Password */}
+                <View style={styles.passwordInputContainer}>
+                  <Text style={styles.passwordLabel}>Confirm New Password</Text>
+                  <View style={styles.passwordInputWrapper}>
+                    <Lock size={16} color="#6B7280" />
+                    <TextInput
+                      style={styles.passwordInput}
+                      value={passwordData.confirmPassword}
+                      onChangeText={(text) => setPasswordData({ ...passwordData, confirmPassword: text })}
+                      placeholder="Confirm new password"
+                      secureTextEntry={!showPasswords.confirm}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                    >
+                      {showPasswords.confirm ? (
+                        <EyeOff size={16} color="#6B7280" />
+                      ) : (
+                        <Eye size={16} color="#6B7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Password Requirements */}
+                <View style={styles.passwordRequirements}>
+                  <Text style={styles.requirementsTitle}>Password Requirements:</Text>
+                  <Text style={styles.requirementText}>• At least 8 characters long</Text>
+                  <Text style={styles.requirementText}>• One uppercase letter</Text>
+                  <Text style={styles.requirementText}>• One lowercase letter</Text>
+                  <Text style={styles.requirementText}>• One number</Text>
+                  <Text style={styles.requirementText}>• One special character (@$!%*?&)</Text>
+                </View>
+              </ScrollView>
+
+              <View style={styles.passwordModalActions}>
+                <TouchableOpacity 
+                  style={styles.passwordCancelButton}
+                  onPress={() => setShowPasswordModal(false)}
+                >
+                  <Text style={styles.passwordCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.passwordSaveButton, passwordLoading && styles.disabledButton]}
+                  onPress={handleChangePassword}
+                  disabled={passwordLoading}
+                >
+                  {passwordLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.passwordSaveText}>Change Password</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Privacy Settings Modal */}
+        <Modal
+          visible={showPrivacyModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowPrivacyModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.privacyModal}>
+              <Text style={styles.modalTitle}>Privacy Settings</Text>
+              <ScrollView style={styles.privacyContent}>
+                {renderPrivacySetting(
+                  'profileVisibility',
+                  'Profile Visibility',
+                  'Make your profile visible to other users',
+                  <UserCheck size={20} color="#6B7280" />
                 )}
-              </TouchableOpacity>
+                {renderPrivacySetting(
+                  'emailNotifications',
+                  'Email Notifications',
+                  'Receive notifications via email',
+                  <Mail size={20} color="#6B7280" />
+                )}
+                {renderPrivacySetting(
+                  'smsNotifications',
+                  'SMS Notifications',
+                  'Receive notifications via SMS',
+                  <Phone size={20} color="#6B7280" />
+                )}
+                {renderPrivacySetting(
+                  'locationSharing',
+                  'Location Sharing',
+                  'Share your location for better service',
+                  <MapPin size={20} color="#6B7280" />
+                )}
+                {renderPrivacySetting(
+                  'dataCollection',
+                  'Data Collection',
+                  'Allow collection of usage analytics',
+                  <Settings size={20} color="#6B7280" />
+                )}
+                {renderPrivacySetting(
+                  'thirdPartySharing',
+                  'Third-party Sharing',
+                  'Share data with trusted partners',
+                  <Globe size={20} color="#6B7280" />
+                )}
+              </ScrollView>
+              <View style={styles.privacyModalActions}>
+                <TouchableOpacity 
+                  style={styles.privacyCancelButton}
+                  onPress={() => setShowPrivacyModal(false)}
+                >
+                  <Text style={styles.privacyCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.privacySaveButton}
+                  onPress={savePrivacySettings}
+                >
+                  <Text style={styles.privacySaveText}>Save Settings</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-
-      {/* Privacy Settings Modal */}
-      <Modal
-        visible={showPrivacyModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPrivacyModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.privacyModal}>
-            <Text style={styles.modalTitle}>Privacy Settings</Text>
-            <ScrollView style={styles.privacyContent}>
-              {renderPrivacySetting(
-                'profileVisibility',
-                'Profile Visibility',
-                'Make your profile visible to other users',
-                <UserCheck size={20} color="#6B7280" />
-              )}
-              {renderPrivacySetting(
-                'emailNotifications',
-                'Email Notifications',
-                'Receive notifications via email',
-                <Mail size={20} color="#6B7280" />
-              )}
-              {renderPrivacySetting(
-                'smsNotifications',
-                'SMS Notifications',
-                'Receive notifications via SMS',
-                <Phone size={20} color="#6B7280" />
-              )}
-              {renderPrivacySetting(
-                'locationSharing',
-                'Location Sharing',
-                'Share your location for better service',
-                <MapPin size={20} color="#6B7280" />
-              )}
-              {renderPrivacySetting(
-                'dataCollection',
-                'Data Collection',
-                'Allow collection of usage analytics',
-                <Settings size={20} color="#6B7280" />
-              )}
-              {renderPrivacySetting(
-                'thirdPartySharing',
-                'Third-party Sharing',
-                'Share data with trusted partners',
-                <Globe size={20} color="#6B7280" />
-              )}
-            </ScrollView>
-            <View style={styles.privacyModalActions}>
-              <TouchableOpacity 
-                style={styles.privacyCancelButton}
-                onPress={() => setShowPrivacyModal(false)}
-              >
-                <Text style={styles.privacyCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.privacySaveButton}
-                onPress={savePrivacySettings}
-              >
-                <Text style={styles.privacySaveText}>Save Settings</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
     </ScreenWrapper>
   );
 };
