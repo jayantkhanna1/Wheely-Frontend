@@ -12,7 +12,10 @@ import {
   Animated,
   Dimensions,
   Alert,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { ArrowLeft, MapPin, Calendar, Clock, Filter, ArrowUpDown, Star, Fuel, Users, Settings, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -682,187 +685,194 @@ export default function BikeSelectionScreen() {
 
   return (
     <ScreenWrapper>
-      <SafeAreaView style={styles.container}>
-        <ScrollView>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft size={24} color="#000000" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-              <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
-            </TouchableOpacity>
-          </View>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <SafeAreaView style={styles.container}>
+          <ScrollView>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <ArrowLeft size={24} color="#000000" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
+                <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* Trip Details - Editable */}
-          <View style={styles.tripDetails}>
-            <TouchableOpacity 
-              style={styles.locationSection}
-            >
-              <Text style={styles.sectionLabel}>Location</Text>
-              <View style={styles.locationRow}>
-                <MapPin size={16} color="#059669" />
-                <Text style={styles.locationText}>{location}</Text>
+            {/* Trip Details - Editable */}
+            <View style={styles.tripDetails}>
+              <TouchableOpacity 
+                style={styles.locationSection}
+              >
+                <Text style={styles.sectionLabel}>Location</Text>
+                <View style={styles.locationRow}>
+                  <MapPin size={16} color="#059669" />
+                  <Text style={styles.locationText}>{location}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.dateTimeSection}>
+                <TouchableOpacity style={styles.dateTimeItem}>
+                  <Text style={styles.dateTimeLabel}>{formatDateTime(tripStartDate, 'date')}</Text>
+                  <Text style={styles.dateTimeValue}>{tripStartTime}</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.dateTimeItem}>
+                  <Text style={styles.dateTimeLabel}>{formatDateTime(tripEndDate, 'date')}</Text>
+                  <Text style={styles.dateTimeValue}>{tripEndTime}</Text>
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <View style={styles.dateTimeSection}>
-              <TouchableOpacity style={styles.dateTimeItem}>
-                <Text style={styles.dateTimeLabel}>{formatDateTime(tripStartDate, 'date')}</Text>
-                <Text style={styles.dateTimeValue}>{tripStartTime}</Text>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>BIKE RIDE</Text>
+              <Text style={styles.subtitle}>Quick and convenient bike rentals!</Text>
+            </View>
+
+            {/* Filter and Sort Bar */}
+            <View style={styles.filterBar}>
+              <TouchableOpacity style={styles.filterButton} onPress={openFilters}>
+                <Filter size={16} color="#059669" />
+                <Text style={styles.filterButtonText}>Filters</Text>
+                {getSelectedFiltersCount() > 0 && (
+                  <View style={styles.filterBadge}>
+                    <Text style={styles.filterBadgeText}>{getSelectedFiltersCount()}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.dateTimeItem}>
-                <Text style={styles.dateTimeLabel}>{formatDateTime(tripEndDate, 'date')}</Text>
-                <Text style={styles.dateTimeValue}>{tripEndTime}</Text>
+
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterTagsContainer}
+                contentContainerStyle={styles.filterTagsContent}
+                data={filters.filter(f => f.selected)}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.filterTag}>
+                    <Text style={styles.filterTagText}>{item.label}</Text>
+                  </View>
+                )}
+              />
+
+              <TouchableOpacity style={styles.sortButton} onPress={openSort}>
+                <ArrowUpDown size={16} color="#059669" />
+                <Text style={styles.sortButtonText}>Sort</Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Title Section */}
-          <View style={styles.titleSection}>
-            <Text style={styles.title}>BIKE RIDE</Text>
-            <Text style={styles.subtitle}>Quick and convenient bike rentals!</Text>
-          </View>
-
-          {/* Filter and Sort Bar */}
-          <View style={styles.filterBar}>
-            <TouchableOpacity style={styles.filterButton} onPress={openFilters}>
-              <Filter size={16} color="#059669" />
-              <Text style={styles.filterButtonText}>Filters</Text>
-              {getSelectedFiltersCount() > 0 && (
-                <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>{getSelectedFiltersCount()}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filterTagsContainer}
-              contentContainerStyle={styles.filterTagsContent}
-              data={filters.filter(f => f.selected)}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>{item.label}</Text>
-                </View>
-              )}
-            />
-
-            <TouchableOpacity style={styles.sortButton} onPress={openSort}>
-              <ArrowUpDown size={16} color="#059669" />
-              <Text style={styles.sortButtonText}>Sort</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Bike List */}
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading bikes...</Text>
-            </View>
-          ) : bikes.length > 0 ? (
-            <View style={styles.bikeListContainer}>
-              {bikes.map((bike) => (
-                <View key={bike.id}>
-                  {renderBikeCard({ item: bike })}
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.noResultsContainer}>
-              <Text style={styles.noResultsText}>No bikes found for your search criteria.</Text>
-              <Text style={styles.noResultsSubtext}>Try adjusting your filters or search parameters.</Text>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Filters Modal */}
-        <Modal
-          visible={showFilters}
-          transparent={true}
-          animationType="none"
-          onRequestClose={closeFilters}
-        >
-          <TouchableWithoutFeedback onPress={closeFilters}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback>
-                <Animated.View 
-                  style={[
-                    styles.filterModal,
-                    { transform: [{ translateX: slideAnim }] }
-                  ]}
-                >
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Filters</Text>
-                    <TouchableOpacity onPress={closeFilters}>
-                      <X size={24} color="#000000" />
-                    </TouchableOpacity>
+            {/* Bike List */}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#059669" />
+                <Text style={styles.loadingText}>Loading bikes...</Text>
+              </View>
+            ) : bikes.length > 0 ? (
+              <View style={styles.bikeListContainer}>
+                {bikes.map((bike) => (
+                  <View key={bike.id}>
+                    {renderBikeCard({ item: bike })}
                   </View>
-                  
-                  <FlatList
-                    data={filters}
-                    renderItem={renderFilterOption}
-                    keyExtractor={(item) => item.id}
-                    style={styles.filterList}
-                    showsVerticalScrollIndicator={false}
-                  />
-                  
-                  <View style={styles.modalFooter}>
-                    <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
-                      <Text style={styles.applyButtonText}>Apply Filters</Text>
-                    </TouchableOpacity>
-                  </View>
-                </Animated.View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsText}>No bikes found for your search criteria.</Text>
+                <Text style={styles.noResultsSubtext}>Try adjusting your filters or search parameters.</Text>
+              </View>
+            )}
+          </ScrollView>
 
-        {/* Sort Modal */}
-        <Modal
-          visible={showSort}
-          transparent={true}
-          animationType="none"
-          onRequestClose={closeSort}
-        >
-          <TouchableWithoutFeedback onPress={closeSort}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback>
-                <Animated.View 
-                  style={[
-                    styles.sortModal,
-                    { transform: [{ translateX: sortSlideAnim }] }
-                  ]}
-                >
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Sort By</Text>
-                    <TouchableOpacity onPress={closeSort}>
-                      <X size={24} color="#000000" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <FlatList
-                    data={sortOptions}
-                    renderItem={renderSortOption}
-                    keyExtractor={(item) => item.id}
-                    style={styles.sortList}
-                    showsVerticalScrollIndicator={false}
-                  />
-                </Animated.View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
+          {/* Filters Modal */}
+          <Modal
+            visible={showFilters}
+            transparent={true}
+            animationType="none"
+            onRequestClose={closeFilters}
+          >
+            <TouchableWithoutFeedback onPress={closeFilters}>
+              <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback>
+                  <Animated.View 
+                    style={[
+                      styles.filterModal,
+                      { transform: [{ translateX: slideAnim }] }
+                    ]}
+                  >
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>Filters</Text>
+                      <TouchableOpacity onPress={closeFilters}>
+                        <X size={24} color="#000000" />
+                      </TouchableOpacity>
+                    </View>
+                    
+                    <FlatList
+                      data={filters}
+                      renderItem={renderFilterOption}
+                      keyExtractor={(item) => item.id}
+                      style={styles.filterList}
+                      showsVerticalScrollIndicator={false}
+                    />
+                    
+                    <View style={styles.modalFooter}>
+                      <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
+                        <Text style={styles.applyButtonText}>Apply Filters</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </Animated.View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
 
-        <SlideMenu
-          visible={showMenu}
-          onClose={closeMenu}
-          userData={userData}
-          setUserData={setUserData}
-        />
-      </SafeAreaView>
+          {/* Sort Modal */}
+          <Modal
+            visible={showSort}
+            transparent={true}
+            animationType="none"
+            onRequestClose={closeSort}
+          >
+            <TouchableWithoutFeedback onPress={closeSort}>
+              <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback>
+                  <Animated.View 
+                    style={[
+                      styles.sortModal,
+                      { transform: [{ translateX: sortSlideAnim }] }
+                    ]}
+                  >
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>Sort By</Text>
+                      <TouchableOpacity onPress={closeSort}>
+                        <X size={24} color="#000000" />
+                      </TouchableOpacity>
+                    </View>
+                    
+                    <FlatList
+                      data={sortOptions}
+                      renderItem={renderSortOption}
+                      keyExtractor={(item) => item.id}
+                      style={styles.sortList}
+                      showsVerticalScrollIndicator={false}
+                    />
+                  </Animated.View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+
+          <SlideMenu
+            visible={showMenu}
+            onClose={closeMenu}
+            userData={userData}
+            setUserData={setUserData}
+          />
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </ScreenWrapper>
   );
 }
@@ -1147,6 +1157,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+    marginTop: 10,
   },
   noResultsContainer: {
     padding: 40,

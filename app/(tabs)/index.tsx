@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback, FlatList, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, ChevronDown, ChevronUp } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HeaderWithProfile } from '../../components/HeaderWithProfile';
@@ -60,6 +59,19 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadUserData();
+    
+    // Add keyboard listeners to dismiss pickers when keyboard appears
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setShowStartPicker(false);
+        setShowEndPicker(false);
+      }
+    );
+    
+    return () => {
+      keyboardDidShowListener.remove();
+    };
   }, []);
 
   const loadUserData = async () => {
@@ -241,6 +253,19 @@ export default function HomeScreen() {
     }
   ];
 
+  // Format dates and times for URL parameters
+  const formatDateForURL = (date: Date) => {
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+
+  const formatTimeForURL = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true 
+    });
+  };
+
   const formatDateTime = (date: Date, type: 'date' | 'time') => {
     if (type === 'date') {
       return date.toLocaleDateString('en-US', {
@@ -306,6 +331,9 @@ export default function HomeScreen() {
           newDate.setSeconds(0);
           newDate.setMilliseconds(0);
           setTripStart(newDate);
+          
+          // Dismiss keyboard after time selection
+          Keyboard.dismiss();
         }
       } else if (type === 'end') {
         if (mode === 'date') {
@@ -331,6 +359,9 @@ export default function HomeScreen() {
           newDate.setSeconds(0);
           newDate.setMilliseconds(0);
           setTripEnd(newDate);
+          
+          // Dismiss keyboard after time selection
+          Keyboard.dismiss();
         }
       }
     }
@@ -343,6 +374,9 @@ export default function HomeScreen() {
     setShowEndPicker(false);
     setStartPickerMode('date');
     setShowStartPicker(!showStartPicker);
+    
+    // Dismiss keyboard when opening date picker
+    Keyboard.dismiss();
   };
 
   const handleEndDateTimePress = () => {
@@ -350,6 +384,9 @@ export default function HomeScreen() {
     setShowStartPicker(false);
     setEndPickerMode('date');
     setShowEndPicker(!showEndPicker);
+    
+    // Dismiss keyboard when opening date picker
+    Keyboard.dismiss();
   };
 
   // 3. Update the mode switching functions to ensure proper state updates:
@@ -421,19 +458,6 @@ export default function HomeScreen() {
       return;
     }
 
-    // Format dates and times for URL parameters
-    const formatDateForURL = (date: Date) => {
-      return date.toISOString().split('T')[0]; // YYYY-MM-DD
-    };
-
-    const formatTimeForURL = (date: Date) => {
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: true 
-      });
-    };
-
     // Navigate to appropriate selection screen based on vehicle type
     if (selectedVehicle === 'car') {
       router.push({
@@ -491,6 +515,7 @@ export default function HomeScreen() {
   const handleLocationSuggestionPress = (suggestion: LocationSuggestion) => {
     setLocation(suggestion.name);
     setShowLocationSuggestions(false);
+    Keyboard.dismiss();
   };
 
   const openMenu = () => {
@@ -530,6 +555,7 @@ export default function HomeScreen() {
     setShowStartPicker(false);
     setShowEndPicker(false);
     setShowLocationSuggestions(false);
+    Keyboard.dismiss();
   };
 
   const renderLocationSuggestion = ({ item }: { item: LocationSuggestion }) => (
@@ -562,253 +588,259 @@ export default function HomeScreen() {
 
   return (
     <ScreenWrapper>
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          {/* Header */}
-          <HeaderWithProfile
-            userData={userData}
-            onProfilePress={openMenu}
-          />
-
-          {/* Location Search */}
-          <View style={styles.locationContainer}>
-            <View style={styles.locationInputContainer}>
-              <Search size={18} color="#6B7280" style={styles.searchIcon} />
-              <TextInput
-                style={styles.locationInput}
-                value={location}
-                onChangeText={handleLocationChange}
-                placeholder="Location"
-                placeholderTextColor="#9CA3AF"
-                onFocus={() => setShowLocationSuggestions(location.length > 0)}
-              />
-              <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress}>
-                <MapPin size={18} color="#6B7280" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.micButton} onPress={handleMicPress}>
-                <Mic size={18} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Location Suggestions */}
-            {showLocationSuggestions && (
-              <View style={styles.suggestionsContainer}>
-                <FlatList
-                  data={filteredSuggestions}
-                  renderItem={renderLocationSuggestion}
-                  keyExtractor={(item) => item.id}
-                  style={styles.suggestionsList}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                />
-              </View>
-            )}
-          </View>
-
-          {/* Date and Time Selection - New Design */}
-          <View style={styles.dateTimeContainer}>
-            <View style={styles.dateTimeSection}>
-              <TouchableOpacity
-                style={styles.dateTimeDropdownNew}
-                onPress={handleStartDateTimePress}
-              >
-                <Text style={styles.dateTimeLabel}>Trip Start</Text>
-                <Text style={styles.dateTimeValue}>
-                  {formatDateTimeForDropdown(tripStart)}
-                </Text>
-                {showStartPicker ? (
-                  <ChevronUp size={16} color="#000000" style={styles.dropdownIcon} />
-                ) : (
-                  <ChevronDown size={16} color="#000000" style={styles.dropdownIcon} />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.dateTimeSection}>
-              <TouchableOpacity
-                style={styles.dateTimeDropdownNew}
-                onPress={handleEndDateTimePress}
-              >
-                <Text style={styles.dateTimeLabel}>Trip End</Text>
-                <Text style={styles.dateTimeValue}>
-                  {formatDateTimeForDropdown(tripEnd)}
-                </Text>
-                {showEndPicker ? (
-                  <ChevronUp size={16} color="#000000" style={styles.dropdownIcon} />
-                ) : (
-                  <ChevronDown size={16} color="#000000" style={styles.dropdownIcon} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Date/Time Pickers positioned below the entire date/time container */}
-          {showStartPicker && Platform.OS !== 'web' && (
-            <View style={styles.pickerContainerFullWidth}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Select Date & Time</Text>
-                <TouchableOpacity
-                  style={styles.pickerCloseButton}
-                  onPress={closeStartPicker}
-                >
-                  <X size={18} color="#000000" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Mode Toggle Buttons */}
-              <View style={styles.modeToggleContainer}>
-                <TouchableOpacity
-                  style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
-                  onPress={() => switchToDateMode('start')}
-                >
-                  <Calendar size={14} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
-                  <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
-                    Date
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
-                  onPress={() => switchToTimeMode('start')}
-                >
-                  <Clock size={14} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
-                  <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
-                    Time
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <DateTimePicker
-                value={tripStart}
-                mode={startPickerMode}
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
-                minimumDate={new Date()}
-                textColor="#000000"
-                accentColor="#059669"
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <TouchableWithoutFeedback onPress={handleOutsidePress}>
+          <SafeAreaView style={styles.container}>
+            <View style={styles.content}>
+              {/* Header */}
+              <HeaderWithProfile
+                userData={userData}
+                onProfilePress={openMenu}
               />
 
-              {Platform.OS === 'ios' && (
-                <View style={styles.pickerButtons}>
-                  <TouchableOpacity
-                    style={styles.pickerButton}
-                    onPress={closeStartPicker}
-                  >
-                    <Text style={styles.pickerButtonText}>Cancel</Text>
+              {/* Location Search */}
+              <View style={styles.locationContainer}>
+                <View style={styles.locationInputContainer}>
+                  <Search size={18} color="#6B7280" style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.locationInput}
+                    value={location}
+                    onChangeText={handleLocationChange}
+                    placeholder="Location"
+                    placeholderTextColor="#9CA3AF"
+                    onFocus={() => setShowLocationSuggestions(location.length > 0)}
+                  />
+                  <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress}>
+                    <MapPin size={18} color="#6B7280" />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.pickerButton, styles.confirmButton]}
-                    onPress={closeStartPicker}
-                  >
-                    <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                  <TouchableOpacity style={styles.micButton} onPress={handleMicPress}>
+                    <Mic size={18} color="#6B7280" />
                   </TouchableOpacity>
+                </View>
+
+                {/* Location Suggestions */}
+                {showLocationSuggestions && (
+                  <View style={styles.suggestionsContainer}>
+                    <FlatList
+                      data={filteredSuggestions}
+                      renderItem={renderLocationSuggestion}
+                      keyExtractor={(item) => item.id}
+                      style={styles.suggestionsList}
+                      showsVerticalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                    />
+                  </View>
+                )}
+              </View>
+
+              {/* Date and Time Selection - New Design */}
+              <View style={styles.dateTimeContainer}>
+                <View style={styles.dateTimeSection}>
+                  <TouchableOpacity
+                    style={styles.dateTimeDropdownNew}
+                    onPress={handleStartDateTimePress}
+                  >
+                    <Text style={styles.dateTimeLabel}>Trip Start</Text>
+                    <Text style={styles.dateTimeValue}>
+                      {formatDateTimeForDropdown(tripStart)}
+                    </Text>
+                    {showStartPicker ? (
+                      <ChevronUp size={16} color="#000000" style={styles.dropdownIcon} />
+                    ) : (
+                      <ChevronDown size={16} color="#000000" style={styles.dropdownIcon} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.dateTimeSection}>
+                  <TouchableOpacity
+                    style={styles.dateTimeDropdownNew}
+                    onPress={handleEndDateTimePress}
+                  >
+                    <Text style={styles.dateTimeLabel}>Trip End</Text>
+                    <Text style={styles.dateTimeValue}>
+                      {formatDateTimeForDropdown(tripEnd)}
+                    </Text>
+                    {showEndPicker ? (
+                      <ChevronUp size={16} color="#000000" style={styles.dropdownIcon} />
+                    ) : (
+                      <ChevronDown size={16} color="#000000" style={styles.dropdownIcon} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Date/Time Pickers positioned below the entire date/time container */}
+              {showStartPicker && Platform.OS !== 'web' && (
+                <View style={styles.pickerContainerFullWidth}>
+                  <View style={styles.pickerHeader}>
+                    <Text style={styles.pickerTitle}>Select Date & Time</Text>
+                    <TouchableOpacity
+                      style={styles.pickerCloseButton}
+                      onPress={closeStartPicker}
+                    >
+                      <X size={18} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Mode Toggle Buttons */}
+                  <View style={styles.modeToggleContainer}>
+                    <TouchableOpacity
+                      style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
+                      onPress={() => switchToDateMode('start')}
+                    >
+                      <Calendar size={14} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                      <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
+                        Date
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
+                      onPress={() => switchToTimeMode('start')}
+                    >
+                      <Clock size={14} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                      <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
+                        Time
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <DateTimePicker
+                    value={tripStart}
+                    mode={startPickerMode}
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
+                    minimumDate={new Date()}
+                    textColor="#000000"
+                    accentColor="#059669"
+                  />
+
+                  {Platform.OS === 'ios' && (
+                    <View style={styles.pickerButtons}>
+                      <TouchableOpacity
+                        style={styles.pickerButton}
+                        onPress={closeStartPicker}
+                      >
+                        <Text style={styles.pickerButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.pickerButton, styles.confirmButton]}
+                        onPress={closeStartPicker}
+                      >
+                        <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
-            </View>
-          )}
 
-          {showEndPicker && Platform.OS !== 'web' && (
-            <View style={styles.pickerContainerFullWidth}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Select Date & Time</Text>
-                <TouchableOpacity
-                  style={styles.pickerCloseButton}
-                  onPress={closeEndPicker}
-                >
-                  <X size={18} color="#000000" />
-                </TouchableOpacity>
-              </View>
+              {showEndPicker && Platform.OS !== 'web' && (
+                <View style={styles.pickerContainerFullWidth}>
+                  <View style={styles.pickerHeader}>
+                    <Text style={styles.pickerTitle}>Select Date & Time</Text>
+                    <TouchableOpacity
+                      style={styles.pickerCloseButton}
+                      onPress={closeEndPicker}
+                    >
+                      <X size={18} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
 
-              {/* Mode Toggle Buttons */}
-              <View style={styles.modeToggleContainer}>
-                <TouchableOpacity
-                  style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
-                  onPress={() => switchToDateMode('end')}
-                >
-                  <Calendar size={14} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
-                  <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
-                    Date
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
-                  onPress={() => switchToTimeMode('end')}
-                >
-                  <Clock size={14} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
-                  <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
-                    Time
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                  {/* Mode Toggle Buttons */}
+                  <View style={styles.modeToggleContainer}>
+                    <TouchableOpacity
+                      style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
+                      onPress={() => switchToDateMode('end')}
+                    >
+                      <Calendar size={14} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                      <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
+                        Date
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
+                      onPress={() => switchToTimeMode('end')}
+                    >
+                      <Clock size={14} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                      <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
+                        Time
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-              <DateTimePicker
-                value={tripEnd}
-                mode={endPickerMode}
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
-                minimumDate={tripStart}
-                textColor="#000000"
-                accentColor="#059669"
-              />
+                  <DateTimePicker
+                    value={tripEnd}
+                    mode={endPickerMode}
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
+                    minimumDate={tripStart}
+                    textColor="#000000"
+                    accentColor="#059669"
+                  />
 
-              {Platform.OS === 'ios' && (
-                <View style={styles.pickerButtons}>
-                  <TouchableOpacity
-                    style={styles.pickerButton}
-                    onPress={closeEndPicker}
-                  >
-                    <Text style={styles.pickerButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.pickerButton, styles.confirmButton]}
-                    onPress={closeEndPicker}
-                  >
-                    <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
-                  </TouchableOpacity>
+                  {Platform.OS === 'ios' && (
+                    <View style={styles.pickerButtons}>
+                      <TouchableOpacity
+                        style={styles.pickerButton}
+                        onPress={closeEndPicker}
+                      >
+                        <Text style={styles.pickerButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.pickerButton, styles.confirmButton]}
+                        onPress={closeEndPicker}
+                      >
+                        <Text style={[styles.pickerButtonText, styles.confirmButtonText]}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
-            </View>
-          )}
 
-          {/* Vehicle Selection */}
-          <View style={styles.vehicleContainer}>
-            {vehicleOptions.map((vehicle) => (
-              <TouchableOpacity
-                key={vehicle.id}
-                style={[
-                  styles.vehicleOption,
-                  selectedVehicle === vehicle.id && styles.vehicleOptionSelected
-                ]}
-                onPress={() => setSelectedVehicle(vehicle.id)}
-              >
-                <View style={styles.vehicleIconContainer}>
-                  {vehicle.icon}
-                </View>
-                <Text style={[
-                  styles.vehicleText,
-                  selectedVehicle === vehicle.id && styles.vehicleTextSelected
-                ]}>
-                  {vehicle.name}
-                </Text>
+              {/* Vehicle Selection */}
+              <View style={styles.vehicleContainer}>
+                {vehicleOptions.map((vehicle) => (
+                  <TouchableOpacity
+                    key={vehicle.id}
+                    style={[
+                      styles.vehicleOption,
+                      selectedVehicle === vehicle.id && styles.vehicleOptionSelected
+                    ]}
+                    onPress={() => setSelectedVehicle(vehicle.id)}
+                  >
+                    <View style={styles.vehicleIconContainer}>
+                      {vehicle.icon}
+                    </View>
+                    <Text style={[
+                      styles.vehicleText,
+                      selectedVehicle === vehicle.id && styles.vehicleTextSelected
+                    ]}>
+                      {vehicle.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Search Button */}
+              <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+                <Text style={styles.searchButtonText}>Search</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
 
-          {/* Search Button */}
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-            <Text style={styles.searchButtonText}>Search</Text>
-          </TouchableOpacity>
-        </View>
-
-        <SlideMenu
-          visible={showMenu}
-          onClose={closeMenu}
-          userData={userData}
-          setUserData={setUserData}
-        />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
-  </ScreenWrapper>
+            <SlideMenu
+              visible={showMenu}
+              onClose={closeMenu}
+              userData={userData}
+              setUserData={setUserData}
+            />
+          </SafeAreaView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 

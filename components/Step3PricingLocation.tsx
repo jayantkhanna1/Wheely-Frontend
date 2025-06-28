@@ -1,10 +1,87 @@
 // components/Step3PricingLocation.tsx
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { StepProps } from '../types/VehicleTypes';
 
+// Indian states and cities for location suggestions
+const indianStates = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 
+  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 
+  'West Bengal'
+];
+
+const majorCities = [
+  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Pune', 
+  'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 
+  'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 
+  'Rajkot', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 
+  'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 
+  'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Chandigarh', 'Guwahati', 'Solapur', 'Hubli-Dharwad'
+];
+
+interface LocationSuggestion {
+  id: string;
+  text: string;
+  type: 'state' | 'city';
+}
+
 const Step3PricingLocation: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const [stateSuggestions, setStateSuggestions] = useState<LocationSuggestion[]>([]);
+  const [citySuggestions, setCitySuggestions] = useState<LocationSuggestion[]>([]);
+  const [showStateSuggestions, setShowStateSuggestions] = useState(false);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+
+  const handleStateChange = (text: string) => {
+    updateFormData('state', text);
+    
+    if (text.length > 0) {
+      const filtered = indianStates
+        .filter(state => state.toLowerCase().includes(text.toLowerCase()))
+        .map((state, index) => ({
+          id: `state-${index}`,
+          text: state,
+          type: 'state' as const
+        }));
+      
+      setStateSuggestions(filtered);
+      setShowStateSuggestions(filtered.length > 0);
+    } else {
+      setShowStateSuggestions(false);
+    }
+  };
+
+  const handleCityChange = (text: string) => {
+    updateFormData('city', text);
+    
+    if (text.length > 0) {
+      const filtered = majorCities
+        .filter(city => city.toLowerCase().includes(text.toLowerCase()))
+        .map((city, index) => ({
+          id: `city-${index}`,
+          text: city,
+          type: 'city' as const
+        }));
+      
+      setCitySuggestions(filtered);
+      setShowCitySuggestions(filtered.length > 0);
+    } else {
+      setShowCitySuggestions(false);
+    }
+  };
+
+  const selectState = (state: string) => {
+    updateFormData('state', state);
+    setShowStateSuggestions(false);
+  };
+
+  const selectCity = (city: string) => {
+    updateFormData('city', city);
+    setShowCitySuggestions(false);
+  };
+
   return (
     <View style={styles.stepContent}>
       <Text style={styles.stepTitle}>Pricing & Location</Text>
@@ -66,8 +143,26 @@ const Step3PricingLocation: React.FC<StepProps> = ({ formData, updateFormData })
             style={styles.input}
             placeholder="City"
             value={formData.city}
-            onChangeText={(text) => updateFormData('city', text)}
+            onChangeText={handleCityChange}
           />
+          {showCitySuggestions && (
+            <View style={styles.suggestionsContainer}>
+              <FlatList
+                data={citySuggestions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.suggestionItem}
+                    onPress={() => selectCity(item.text)}
+                  >
+                    <Text style={styles.suggestionText}>{item.text}</Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.suggestionsList}
+                nestedScrollEnabled
+              />
+            </View>
+          )}
         </View>
         <View style={styles.halfInput}>
           <Text style={styles.label}>State *</Text>
@@ -75,8 +170,26 @@ const Step3PricingLocation: React.FC<StepProps> = ({ formData, updateFormData })
             style={styles.input}
             placeholder="State"
             value={formData.state}
-            onChangeText={(text) => updateFormData('state', text)}
+            onChangeText={handleStateChange}
           />
+          {showStateSuggestions && (
+            <View style={styles.suggestionsContainer}>
+              <FlatList
+                data={stateSuggestions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.suggestionItem}
+                    onPress={() => selectState(item.text)}
+                  >
+                    <Text style={styles.suggestionText}>{item.text}</Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.suggestionsList}
+                nestedScrollEnabled
+              />
+            </View>
+          )}
         </View>
       </View>
       <View style={styles.row}>
@@ -199,6 +312,7 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
+    position: 'relative',
   },
   dropdownButton: {
     borderWidth: 1,
@@ -411,15 +525,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
-
   mapPinContainer: {
     paddingTop: 2,
   },
-
   imageContainer: {
     position: 'relative',
   },
-
   removeImageButton: {
     position: 'absolute',
     top: -8,
@@ -433,14 +544,43 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-
   documentTextContainer: {
     flex: 1,
   },
-
   documentFileName: {
     fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginTop: 4,
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    maxHeight: 150,
+  },
+  suggestionsList: {
+    maxHeight: 150,
+  },
+  suggestionItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#374151',
   }
 });
