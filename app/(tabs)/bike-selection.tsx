@@ -63,10 +63,12 @@ interface BackendVehicle {
   rating: number;
   is_available: boolean;
   primary_photo: string;
+  photos: string[];
   seating_capacity: number;
   fuel_type: string;
   year: string;
   transmission?: string;
+  features?: string[];
 }
 
 interface Bike {
@@ -106,7 +108,7 @@ export default function BikeSelectionScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const sortSlideAnim = useRef(new Animated.Value(screenWidth)).current;
@@ -403,7 +405,7 @@ export default function BikeSelectionScreen() {
 
         if (backendData && backendData.length > 0) {
           // Transform backend data to match frontend Bike interface
-          const transformedBikes = backendData.map((vehicle: BackendVehicle, index: number) => ({
+          const transformedBikes = backendData.map((vehicle: BackendVehicle) => ({
             id: vehicle.id.toString(),
             name: vehicle.vehicle_brand,
             model: vehicle.vehicle_model,
@@ -423,10 +425,6 @@ export default function BikeSelectionScreen() {
               `${vehicle.seating_capacity || 2} Seats`,
               parseFloat(vehicle.price_per_hour) > 100 ? 'Premium' : 'Standard'
             ],
-            // Additional backend fields
-            owner_name: vehicle.owner_name,
-            location: vehicle.location,
-            is_available: vehicle.is_available
           }));
 
           console.log('Transformed bikes data:', transformedBikes);

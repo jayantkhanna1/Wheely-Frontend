@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
+import { 
   View, 
   Text, 
   StyleSheet, 
@@ -35,6 +35,27 @@ interface UserData {
   driving_license_verified: boolean;
 }
 
+interface BackendVehicle {
+  id: number;
+  vehicle_name: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_type: string;
+  price_per_hour: string;
+  price_per_day: string;
+  location: any;
+  owner_name: string;
+  rating: number;
+  is_available: boolean;
+  primary_photo: string;
+  photos: string[];
+  seating_capacity: number;
+  fuel_type: string;
+  year: string;
+  transmission?: string;
+  features?: string[];
+}
+
 interface MenuItem {
   id: string;
   title: string;
@@ -58,27 +79,6 @@ interface FAQ {
   expanded: boolean;
 }
 
-interface BackendVehicle {
-  id: number;
-  vehicle_name: string;
-  vehicle_brand: string;
-  vehicle_model: string;
-  vehicle_type: string;
-  price_per_hour: string;
-  price_per_day: string;
-  location: any;
-  owner_name: string;
-  rating: number;
-  is_available: boolean;
-  primary_photo: string;
-  photos: string[];
-  seating_capacity: number;
-  fuel_type: string;
-  year: string;
-  transmission?: string;
-  features?: string[];
-}
-
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function BikeDetailsScreen() {
@@ -100,13 +100,23 @@ export default function BikeDetailsScreen() {
   const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
   const [tempLocation, setTempLocation] = useState(location);
   const [showMenu, setShowMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState('Photos');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [vehicleData, setVehicleData] = useState<BackendVehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [bikeImages, setBikeImages] = useState<string[]>([]);
+  
+  // Ref for scrolling to sections
+  const scrollViewRef = useRef<ScrollView>(null);
+  const sectionRefs = {
+    photos: useRef<View>(null),
+    reviews: useRef<View>(null),
+    features: useRef<View>(null),
+    location: useRef<View>(null),
+    offers: useRef<View>(null),
+    faqs: useRef<View>(null),
+  };
   
   useEffect(() => {
     loadUserData();
@@ -223,34 +233,8 @@ export default function BikeDetailsScreen() {
 
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
 
-  const reviews: Review[] = [
-    {
-      id: '1',
-      name: 'Ananya Vishnoi',
-      rating: 5,
-      comment: 'I rode this bike around 150+ kms over 3 days very satisfied with the performance and mileage. I recommend this bike that an amazing experience, would love to go with this bike again in future.',
-      date: '2 days ago',
-      avatar: 'AV'
-    },
-    {
-      id: '2',
-      name: 'Rahul Sharma',
-      rating: 5,
-      comment: 'Excellent bike with amazing performance. The booking process was smooth and the bike was in perfect condition.',
-      date: '1 week ago',
-      avatar: 'RS'
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      rating: 4,
-      comment: 'Great experience overall. The bike was clean and well-maintained. Would definitely book again.',
-      date: '2 weeks ago',
-      avatar: 'PP'
-    }
-  ];
-
-  const tabs = ['Photos', 'Reviews', 'Features', 'Location', 'Offers'];
+  // Empty reviews state for the "no reviews" message
+  const [hasReviews, setHasReviews] = useState(false);
 
   const features = vehicleData?.features || [
     'Automatic Transmission',
@@ -413,8 +397,8 @@ export default function BikeDetailsScreen() {
   };
 
   const toggleFAQ = (faqId: string) => {
-    setFaqs(prev => prev.map(faq =>
-      faq.id === faqId
+    setFaqs(prev => prev.map(faq => 
+      faq.id === faqId 
         ? { ...faq, expanded: !faq.expanded }
         : faq
     ));
@@ -467,11 +451,159 @@ export default function BikeDetailsScreen() {
     });
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Photos':
-        return (
-          <View style={styles.photosContainer}>
+  // Function to scroll to a specific section
+  const scrollToSection = (sectionName: keyof typeof sectionRefs) => {
+    const sectionRef = sectionRefs[sectionName];
+    if (sectionRef.current && scrollViewRef.current) {
+      sectionRef.current.measureLayout(
+        // @ts-ignore - This is a valid method but TypeScript doesn't recognize it
+        scrollViewRef.current.getInnerViewNode(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+        },
+        () => console.log('Failed to measure layout')
+      );
+    }
+  };
+
+  if (loading) {
+    return (
+      <ScreenWrapper>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingFullScreen}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading bike details...</Text>
+          </View>
+        </SafeAreaView>
+      </ScreenWrapper>
+    );
+  }
+
+  return (
+    <ScreenWrapper>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push({
+            pathname: '/bike-selection',
+            params: {
+              location: location,
+              tripStartDate: tripStartDate,
+              tripEndDate: tripEndDate,
+              tripStartTime: tripStartTime,
+              tripEndTime: tripEndTime
+            }
+          })} style={styles.backButton}>
+            <ArrowLeft size={24} color="#000000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
+            <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Scrollable Content */}
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Trip Details - Editable */}
+          <View style={styles.tripDetails}>
+            <View style={styles.tripHeader}>
+              <View>
+                <Text style={styles.bikeTitle}>
+                  {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Honda Activa 6G'}
+                </Text>
+                <Text style={styles.bikeLocation}>{location}</Text>
+              </View>
+              <TouchableOpacity style={styles.shareButton}>
+                <Share2 size={20} color="#059669" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.dateTimeSection}>
+              <TouchableOpacity 
+                style={styles.dateTimeItem}
+                onPress={() => handleDateTimeEdit('start')}
+              >
+                <Text style={styles.dateTimeLabel}>
+                  {tripStartDate ? new Date(tripStartDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripStart, 'date')}
+                </Text>
+                <Text style={styles.dateTimeValue}>
+                  {tripStartTime || formatDateTime(tripStart, 'time')}
+                </Text>
+                <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.dateTimeItem}
+                onPress={() => handleDateTimeEdit('end')}
+              >
+                <Text style={styles.dateTimeLabel}>
+                  {tripEndDate ? new Date(tripEndDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripEnd, 'date')}
+                </Text>
+                <Text style={styles.dateTimeValue}>
+                  {tripEndTime || formatDateTime(tripEnd, 'time')}
+                </Text>
+                <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Bike Info */}
+          <View style={styles.bikeInfo}>
+            <View style={styles.bikeHeader}>
+              <Text style={styles.bikeName}>
+                {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Honda Activa 6G'}
+              </Text>
+            </View>
+            <Text style={styles.bikeFeatures}>
+              {vehicleData ? 
+                `${vehicleData.transmission || 'Automatic'} • ${vehicleData.fuel_type || 'Petrol'} • ${vehicleData.seating_capacity || 2} Seats` : 
+                'Automatic • Petrol • 2 Seats'}
+            </Text>
+            <Text style={styles.bikeUrl}>https://maps.google.com/25716420/details/712681</Text>
+          </View>
+
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('photos')}
+              >
+                <Text style={styles.tabText}>Photos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('reviews')}
+              >
+                <Text style={styles.tabText}>Reviews</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('features')}
+              >
+                <Text style={styles.tabText}>Features</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('location')}
+              >
+                <Text style={styles.tabText}>Location</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('offers')}
+              >
+                <Text style={styles.tabText}>Offers</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+
+          {/* Photos Section */}
+          <View ref={sectionRefs.photos} style={styles.photosContainer}>
+            <Text style={styles.sectionTitle}>Photos</Text>
             <View style={styles.mainImageContainer}>
               {loading ? (
                 <View style={[styles.mainImage, styles.loadingContainer]}>
@@ -517,50 +649,36 @@ export default function BikeDetailsScreen() {
               )}
             </View>
           </View>
-        );
 
-      case 'Reviews':
-        return (
-          <View style={styles.reviewsContainer}>
+          {/* Reviews Section */}
+          <View ref={sectionRefs.reviews} style={styles.reviewsContainer}>
+            <Text style={styles.sectionTitle}>Reviews & Rating</Text>
             <View style={styles.ratingOverview}>
-              <Text style={styles.ratingTitle}>Reviews & Rating</Text>
               <View style={styles.ratingHeader}>
                 <Text style={styles.ratingScore}>{vehicleData?.rating?.toFixed(1) || '4.6'}</Text>
                 <View style={styles.ratingStarsContainer}>
                   <View style={styles.ratingStars}>
                     {renderStars(vehicleData?.rating || 4.6)}
                   </View>
-                  <Text style={styles.reviewCount}>10 Reviews</Text>
                 </View>
               </View>
             </View>
-
-            {reviews.map((item) => (
-              <View key={item.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewerInfo}>
-                    <View style={styles.reviewerAvatar}>
-                      <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.reviewerName}>{item.name}</Text>
-                      <Text style={styles.reviewDate}>{item.date}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.reviewRating}>
-                    {renderStars(item.rating)}
-                  </View>
-                </View>
-                <Text style={styles.reviewComment}>{item.comment}</Text>
+            
+            {hasReviews ? (
+              <View>
+                {/* This would show actual reviews if we had them */}
               </View>
-            ))}
+            ) : (
+              <View style={styles.noReviewsContainer}>
+                <Text style={styles.noReviewsText}>No reviews yet</Text>
+                <Text style={styles.noReviewsSubtext}>Be the first to review this bike after your trip!</Text>
+              </View>
+            )}
           </View>
-        );
 
-      case 'Features':
-        return (
-          <View style={styles.featuresContainer}>
-            <Text style={styles.featuresTitle}>Bike Features</Text>
+          {/* Features Section */}
+          <View ref={sectionRefs.features} style={styles.featuresContainer}>
+            <Text style={styles.sectionTitle}>Bike Features</Text>
             <View style={styles.featuresList}>
               {features.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
@@ -570,12 +688,10 @@ export default function BikeDetailsScreen() {
               ))}
             </View>
           </View>
-        );
 
-      case 'Location':
-        return (
-          <View style={styles.locationContainer}>
-            <Text style={styles.locationTitle}>Bike Location</Text>
+          {/* Location Section */}
+          <View ref={sectionRefs.location} style={styles.locationContainer}>
+            <Text style={styles.sectionTitle}>Bike Location</Text>
             <View style={styles.locationCard}>
               <View style={styles.locationIcon}>
                 <MapPin size={24} color="#059669" />
@@ -588,12 +704,10 @@ export default function BikeDetailsScreen() {
               </View>
             </View>
           </View>
-        );
 
-      case 'Offers':
-        return (
-          <View style={styles.offersContainer}>
-            <Text style={styles.offersTitle}>Special Offers</Text>
+          {/* Offers Section */}
+          <View ref={sectionRefs.offers} style={styles.offersContainer}>
+            <Text style={styles.sectionTitle}>Special Offers</Text>
             <View style={styles.offerCard}>
               <Text style={styles.offerTitle}>First Time User</Text>
               <Text style={styles.offerDescription}>Get 20% off on your first booking</Text>
@@ -605,330 +719,214 @@ export default function BikeDetailsScreen() {
               <Text style={styles.offerCode}>Use code: WEEKEND15</Text>
             </View>
           </View>
-        );
 
-      default:
-        return null;
-    }
-  };
-
-  if (loading) {
-    return (
-      <ScreenWrapper>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.loadingFullScreen}>
-            <ActivityIndicator size="large" color="#059669" />
-            <Text style={styles.loadingText}>Loading bike details...</Text>
-          </View>
-        </SafeAreaView>
-      </ScreenWrapper>
-    );
-  }
-
-  return (
-    <ScreenWrapper>
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/bike-selection')} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Scrollable Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Trip Details - Editable */}
-        <View style={styles.tripDetails}>
-          <View style={styles.tripHeader}>
-            <View>
-              <Text style={styles.bikeTitle}>
-                {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Honda Activa 6G'}
-              </Text>
-              <Text style={styles.bikeLocation}>{location}</Text>
-            </View>
-            <TouchableOpacity style={styles.shareButton}>
-              <Share2 size={20} color="#059669" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.dateTimeSection}>
-            <TouchableOpacity
-              style={styles.dateTimeItem}
-              onPress={() => handleDateTimeEdit('start')}
-            >
-              <Text style={styles.dateTimeLabel}>
-                {tripStartDate ? new Date(tripStartDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripStart, 'date')}
-              </Text>
-              <Text style={styles.dateTimeValue}>
-                {tripStartTime || formatDateTime(tripStart, 'time')}
-              </Text>
-              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.dateTimeItem}
-              onPress={() => handleDateTimeEdit('end')}
-            >
-              <Text style={styles.dateTimeLabel}>
-                {tripEndDate ? new Date(tripEndDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripEnd, 'date')}
-              </Text>
-              <Text style={styles.dateTimeValue}>
-                {tripEndTime || formatDateTime(tripEnd, 'time')}
-              </Text>
-              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Bike Info */}
-        <View style={styles.bikeInfo}>
-          <View style={styles.bikeHeader}>
-            <Text style={styles.bikeName}>
-              {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Honda Activa 6G'}
-            </Text>
-            <View style={styles.ratingContainer}>
-              {renderStars(vehicleData?.rating || 4.6)}
-              <Text style={styles.reviewCount}>10 Reviews</Text>
-            </View>
-          </View>
-          <Text style={styles.bikeFeatures}>
-            {vehicleData ? 
-              `${vehicleData.transmission || 'Automatic'} • ${vehicleData.fuel_type || 'Petrol'} • ${vehicleData.seating_capacity || 2} Seats` : 
-              'Automatic • Petrol • 2 Seats'}
-          </Text>
-          <Text style={styles.bikeUrl}>https://maps.google.com/25716420/details/712681</Text>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {tabs.map((tab) => (
+          {/* FAQs Section */}
+          <View ref={sectionRefs.faqs} style={styles.faqsContainer}>
+            <Text style={styles.sectionTitle}>FAQs</Text>
+            {faqs.map((faq) => (
               <TouchableOpacity
-                key={tab}
-                style={[styles.tab, activeTab === tab && styles.activeTab]}
-                onPress={() => setActiveTab(tab)}
+                key={faq.id}
+                style={styles.faqItem}
+                onPress={() => toggleFAQ(faq.id)}
               >
-                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                  {tab}
-                </Text>
+                <View style={styles.faqHeader}>
+                  <Text style={styles.faqQuestion}>{faq.question}</Text>
+                  {faq.expanded ? (
+                    <ChevronUp size={20} color="#6B7280" />
+                  ) : (
+                    <ChevronDown size={20} color="#6B7280" />
+                  )}
+                </View>
+                {faq.expanded && (
+                  <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                )}
               </TouchableOpacity>
             ))}
-          </ScrollView>
-        </View>
+          </View>
 
-        {/* Tab Content */}
-        {renderTabContent()}
-
-        {/* FAQs Section */}
-        <View style={styles.faqsContainer}>
-          <Text style={styles.faqsTitle}>FAQs</Text>
-          {faqs.map((faq) => (
-            <TouchableOpacity
-              key={faq.id}
-              style={styles.faqItem}
-              onPress={() => toggleFAQ(faq.id)}
+          {/* Policies Section */}
+          <View style={styles.policiesContainer}>
+            <Text style={styles.sectionTitle}>Policies and Agreement</Text>
+            <TouchableOpacity 
+              style={styles.policyItem}
+              onPress={() => setIsAgreed(!isAgreed)}
             >
-              <View style={styles.faqHeader}>
-                <Text style={styles.faqQuestion}>{faq.question}</Text>
-                {faq.expanded ? (
-                  <ChevronUp size={20} color="#6B7280" />
-                ) : (
-                  <ChevronDown size={20} color="#6B7280" />
-                )}
+              <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
+                {isAgreed && <Text style={styles.checkmark}>✓</Text>}
               </View>
-              {faq.expanded && (
-                <Text style={styles.faqAnswer}>{faq.answer}</Text>
-              )}
+              <Text style={styles.policyText}>
+                I hereby agree to the terms and conditions of the Lease Agreement with Host.
+              </Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
 
-        {/* Policies Section */}
-        <View style={styles.policiesContainer}>
-          <Text style={styles.policiesTitle}>Policies and Agreement</Text>
-          <TouchableOpacity
-            style={styles.policyItem}
-            onPress={() => setIsAgreed(!isAgreed)}
-          >
-            <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
-              {isAgreed && <Text style={styles.checkmark}>✓</Text>}
+          {/* Bottom Spacing for Fixed Price Bar */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+
+        {/* Fixed Price Bar */}
+        <View style={styles.priceBar}>
+          <View style={styles.priceInfo}>
+            <Text style={styles.priceAmount}>₹{vehicleData?.price_per_hour || '45'}</Text>
+            <Text style={styles.priceBreakup}>Price Breakup</Text>
+            <View style={styles.priceFeatures}>
+              <Text style={styles.priceFeature}>• Helmet</Text>
+              <Text style={styles.priceFeature}>• {vehicleData?.transmission || 'Automatic'}</Text>
+              <Text style={styles.priceFeature}>• Fuel</Text>
             </View>
-            <Text style={styles.policyText}>
-              I hereby agree to the terms and conditions of the Lease Agreement with Host.
-            </Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]} 
+            onPress={handleBookNow}
+            disabled={!isAgreed}
+          >
+            <Text style={styles.bookButtonText}>Book Now</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Spacing for Fixed Price Bar */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
+        {/* Date/Time Pickers */}
+        {showStartPicker && Platform.OS !== 'web' && (
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Start Date & Time</Text>
+                <TouchableOpacity onPress={() => setShowStartPicker(false)}>
+                  <X size={20} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modeToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
+                  onPress={() => setStartPickerMode('date')}
+                >
+                  <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
+                  onPress={() => setStartPickerMode('time')}
+                >
+                  <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
+                    Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-      {/* Fixed Price Bar */}
-      <View style={styles.priceBar}>
-        <View style={styles.priceInfo}>
-          <Text style={styles.priceAmount}>₹{vehicleData?.price_per_hour || '45'}</Text>
-          <Text style={styles.priceBreakup}>Price Breakup</Text>
-          <View style={styles.priceFeatures}>
-            <Text style={styles.priceFeature}>• Helmet</Text>
-            <Text style={styles.priceFeature}>• {vehicleData?.transmission || 'Automatic'}</Text>
-            <Text style={styles.priceFeature}>• Fuel</Text>
+              <DateTimePicker
+                value={tripStart}
+                mode={startPickerMode}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
+                minimumDate={new Date()}
+                textColor="#000000"
+                accentColor="#059669"
+              />
+            </View>
           </View>
-        </View>
-        <TouchableOpacity 
-          style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]} 
-          onPress={handleBookNow}
-          disabled={!isAgreed}
+        )}
+
+        {showEndPicker && Platform.OS !== 'web' && (
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select End Date & Time</Text>
+                <TouchableOpacity onPress={() => setShowEndPicker(false)}>
+                  <X size={20} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modeToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
+                  onPress={() => setEndPickerMode('date')}
+                >
+                  <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
+                  onPress={() => setEndPickerMode('time')}
+                >
+                  <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
+                    Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <DateTimePicker
+                value={tripEnd}
+                mode={endPickerMode}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
+                minimumDate={tripStart}
+                textColor="#000000"
+                accentColor="#059669"
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Location Edit Modal */}
+        <Modal
+          visible={showLocationEdit}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowLocationEdit(false)}
         >
-          <Text style={styles.bookButtonText}>Book Now</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Date/Time Pickers */}
-      {showStartPicker && Platform.OS !== 'web' && (
-        <View style={styles.pickerOverlay}>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select Start Date & Time</Text>
-              <TouchableOpacity onPress={() => setShowStartPicker(false)}>
-                <X size={20} color="#000000" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modeToggleContainer}>
-              <TouchableOpacity
-                style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
-                onPress={() => setStartPickerMode('date')}
-              >
-                <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
-                  Date
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
-                onPress={() => setStartPickerMode('time')}
-              >
-                <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
-                  Time
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <DateTimePicker
-              value={tripStart}
-              mode={startPickerMode}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
-              minimumDate={new Date()}
-              textColor="#000000"
-              accentColor="#059669"
-            />
-          </View>
-        </View>
-      )}
-
-      {showEndPicker && Platform.OS !== 'web' && (
-        <View style={styles.pickerOverlay}>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select End Date & Time</Text>
-              <TouchableOpacity onPress={() => setShowEndPicker(false)}>
-                <X size={20} color="#000000" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modeToggleContainer}>
-              <TouchableOpacity
-                style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
-                onPress={() => setEndPickerMode('date')}
-              >
-                <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
-                  Date
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
-                onPress={() => setEndPickerMode('time')}
-              >
-                <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
-                  Time
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <DateTimePicker
-              value={tripEnd}
-              mode={endPickerMode}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
-              minimumDate={tripStart}
-              textColor="#000000"
-              accentColor="#059669"
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Location Edit Modal */}
-      <Modal
-        visible={showLocationEdit}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowLocationEdit(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowLocationEdit(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.locationEditModal}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Edit Location</Text>
-                  <TouchableOpacity onPress={() => setShowLocationEdit(false)}>
-                    <X size={24} color="#000000" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.locationEditContent}>
-                  <TextInput
-                    style={styles.locationEditInput}
-                    value={tempLocation}
-                    onChangeText={setTempLocation}
-                    placeholder="Enter location"
-                    autoFocus={true}
-                  />
-
-                  <View style={styles.locationEditButtons}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => setShowLocationEdit(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.saveButton}
-                      onPress={saveLocationEdit}
-                    >
-                      <Text style={styles.saveButtonText}>Save</Text>
+          <TouchableWithoutFeedback onPress={() => setShowLocationEdit(false)}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.locationEditModal}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Edit Location</Text>
+                    <TouchableOpacity onPress={() => setShowLocationEdit(false)}>
+                      <X size={24} color="#000000" />
                     </TouchableOpacity>
                   </View>
+                  
+                  <View style={styles.locationEditContent}>
+                    <TextInput
+                      style={styles.locationEditInput}
+                      value={tempLocation}
+                      onChangeText={setTempLocation}
+                      placeholder="Enter location"
+                      autoFocus={true}
+                    />
+                    
+                    <View style={styles.locationEditButtons}>
+                      <TouchableOpacity 
+                        style={styles.cancelButton}
+                        onPress={() => setShowLocationEdit(false)}
+                      >
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.saveButton}
+                        onPress={saveLocationEdit}
+                      >
+                        <Text style={styles.saveButtonText}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-      <SlideMenu
-        visible={showMenu}
-        onClose={closeMenu}
-        userData={userData}
-        setUserData={setUserData}
-      />
-    </SafeAreaView>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+        <SlideMenu
+          visible={showMenu}
+          onClose={closeMenu}
+          userData={userData}
+          setUserData={setUserData}
+        />
+      </SafeAreaView>
     </ScreenWrapper>
   );
 }
@@ -936,7 +934,6 @@ export default function BikeDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 30,
     backgroundColor: '#F9FAFB',
   },
   header: {
@@ -1088,18 +1085,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     marginHorizontal: 4,
-    borderRadius: 20,
-  },
-  activeTab: {
-    backgroundColor: '#059669',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#059669',
   },
-  activeTabText: {
-    color: '#FFFFFF',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
   },
   photosContainer: {
     padding: 20,
@@ -1181,15 +1177,11 @@ const styles = StyleSheet.create({
   },
   reviewsContainer: {
     padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   ratingOverview: {
     marginBottom: 24,
-  },
-  ratingTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 12,
   },
   ratingHeader: {
     flexDirection: 'row',
@@ -1209,62 +1201,27 @@ const styles = StyleSheet.create({
     gap: 2,
     marginBottom: 2,
   },
-  reviewCard: {
+  noReviewsContainer: {
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  reviewerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  reviewerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#059669',
-    justifyContent: 'center',
+    padding: 20,
     alignItems: 'center',
   },
-  reviewerAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  reviewerName: {
+  noReviewsText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
-  },
-  reviewDate: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  reviewRating: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  reviewComment: {
-    fontSize: 14,
     color: '#374151',
-    lineHeight: 20,
+    marginBottom: 8,
+  },
+  noReviewsSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   featuresContainer: {
     padding: 20,
-  },
-  featuresTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   featuresList: {
     gap: 12,
@@ -1286,12 +1243,8 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     padding: 20,
-  },
-  locationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   locationCard: {
     flexDirection: 'row',
@@ -1319,12 +1272,8 @@ const styles = StyleSheet.create({
   },
   offersContainer: {
     padding: 20,
-  },
-  offersTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   offerCard: {
     backgroundColor: '#F0FDF4',
@@ -1353,13 +1302,7 @@ const styles = StyleSheet.create({
   faqsContainer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  faqsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopColor: '#F3F4F6',
   },
   faqItem: {
     borderBottomWidth: 1,
@@ -1388,12 +1331,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-  },
-  policiesTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
   },
   policyItem: {
     flexDirection: 'row',
