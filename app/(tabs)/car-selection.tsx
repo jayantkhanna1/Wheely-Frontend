@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  View, 
+  Text, 
+  StyleSheet, 
   TouchableOpacity,
-  SafeAreaView,
-  Image,
-  Modal,
+  SafeAreaView, 
+  Image, 
+  Modal, 
   FlatList,
   Animated,
   Dimensions,
@@ -15,10 +15,9 @@ import {
   ScrollView
 } from 'react-native';
 import { ArrowLeft, MapPin, ArrowUpDown, Star, X, CreditCard as Edit3, Filter } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SlideMenu } from '../../components/SlideMenu';
-import { useLocalSearchParams } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 
 interface UserData {
@@ -752,7 +751,11 @@ export default function CarSelectionScreen() {
           {/* Car List */}
           {cars.length > 0 ? (
             <View style={styles.carListContainer}>
-              {cars.map((car) => renderCarCard({ item: car }))}
+              {cars.map((car) => (
+                <View key={car.id}>
+                  {renderCarCard({ item: car })}
+                </View>
+              ))}
             </View>
           ) : (
             <View style={styles.noResultsContainer}>
