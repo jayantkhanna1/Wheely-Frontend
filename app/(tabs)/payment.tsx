@@ -7,11 +7,13 @@ import {
   ScrollView, 
   SafeAreaView, 
   Image,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
-import { ArrowLeft, CreditCard, Smartphone, Building2, Wallet, ChevronRight, Clock } from 'lucide-react-native';
+import { ArrowLeft, CreditCard, Smartphone, Building2, Wallet, ChevronRight } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface PaymentMethod {
   id: string;
@@ -24,20 +26,38 @@ interface PaymentMethod {
 
 export default function PaymentScreen() {
   const params = useLocalSearchParams();
+  const vehicleId = params.vehicleId as string;
   const vehicleType = params.vehicleType as string || 'car';
-  const vehicleName = params.vehicleName as string || 'Lamborghini 2020';
-  const price = params.price as string || '20010';
+  const vehicleName = params.vehicleName as string || 'Vehicle';
+  const price = params.price as string || '0';
   const duration = params.duration as string || '12 hours';
-  const pickupLocation = params.pickupLocation as string || '8XM9+MwC, Special Wing, Prem Nagar...';
+  const pickupLocation = params.pickupLocation as string || 'Location not specified';
+  const tripStartDate = params.tripStartDate as string;
+  const tripEndDate = params.tripEndDate as string;
+  const tripStartTime = params.tripStartTime as string;
+  const tripEndTime = params.tripEndTime as string;
   
   const [selectedPayment, setSelectedPayment] = useState('google-pay');
-  const [timeLeft, setTimeLeft] = useState(582); // 9:42 minutes in seconds
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
-  // Format time remaining
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')} Minutes`;
+  React.useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
   };
 
   const getVehicleImage = () => {
@@ -55,19 +75,19 @@ export default function PaymentScreen() {
     switch (vehicleType) {
       case 'bike':
         return {
-          name: 'Honda Activa 6G',
+          name: vehicleName || 'Honda Activa 6G',
           rating: '4.6',
           features: ['Helmet', 'Automatic', 'Fuel']
         };
       case 'cycle':
         return {
-          name: 'Trek FX 3 Disc',
+          name: vehicleName || 'Trek FX 3 Disc',
           rating: '4.8',
           features: ['Helmet', 'Lock', 'Lights']
         };
       default:
         return {
-          name: 'Lamborghini 2020',
+          name: vehicleName || 'Car',
           rating: '5.0',
           features: ['Toolkit', 'Automatic', 'Headlights']
         };
@@ -128,23 +148,88 @@ export default function PaymentScreen() {
 
   const vehicle = getVehicleDetails();
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!selectedPayment) {
       Alert.alert('Error', 'Please select a payment method');
       return;
     }
 
-    // Simulate payment processing
-    Alert.alert(
-      'Payment Successful!',
-      `Your ${vehicleType} has been booked successfully. You will receive a confirmation shortly.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)')
-        }
-      ]
-    );
+    if (!userData || !userData.id) {
+      Alert.alert('Error', 'User data not available. Please log in again.');
+      return;
+    }
+
+    if (!vehicleId) {
+      Alert.alert('Error', 'Vehicle information is missing');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Prepare booking data
+      const bookingData = {
+        user_id: userData.id,
+        vehicle_id: parseInt(vehicleId),
+        start_date: tripStartDate ? new Date(tripStartDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        end_date: tripEndDate ? new Date(tripEndDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        start_time: tripStartTime || '09:00:00',
+        end_time: tripEndTime || '18:00:00',
+        payment_method: selectedPayment,
+        amount: parseFloat(price),
+        location: pickupLocation,
+        status: 'confirmed'
+      };
+
+      console.log('Sending booking request with data:', bookingData);
+
+      // Make API call to book the vehicle
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/book/`;
+      const response = await fetch(apiURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      console.log('Booking response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Booking response data:', data);
+        
+        // Simulate payment processing
+        Alert.alert(
+          'Payment Successful!',
+          `Your ${vehicleType} has been booked successfully. You will receive a confirmation shortly.`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/(tabs)')
+            }
+          ]
+        );
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Booking Error Response:', errorData);
+        
+        Alert.alert(
+          'Booking Failed',
+          errorData.message || errorData.error || 'Failed to book the vehicle. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error during booking:', error);
+      Alert.alert(
+        'Error',
+        'Network error. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePaymentMethodSelect = (methodId: string) => {
@@ -156,6 +241,41 @@ export default function PaymentScreen() {
     Alert.alert('Coming Soon', `${optionId} payment method will be available soon.`);
   };
 
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        day: '2-digit',
+        month: 'short',
+        year: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
+  // Format time for display
+  const formatTime = (timeString: string) => {
+    try {
+      // Handle different time formats
+      if (timeString.includes(':')) {
+        // If it's already in HH:MM format
+        return timeString;
+      } else {
+        // If it's a full date string
+        const date = new Date(timeString);
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+    } catch (error) {
+      return timeString;
+    }
+  };
+
   return (
     <ScreenWrapper>
     <SafeAreaView style={styles.container}>
@@ -165,11 +285,6 @@ export default function PaymentScreen() {
           <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Complete Payment</Text>
-        <View style={styles.timerContainer}>
-          <Clock size={16} color="#059669" />
-          <Text style={styles.timerText}>price locked for</Text>
-          <Text style={styles.timerValue}>{formatTime(timeLeft)}</Text>
-        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -190,11 +305,10 @@ export default function PaymentScreen() {
           <View style={styles.vehicleInfo}>
             <View style={styles.vehicleHeader}>
               <Text style={styles.vehicleName}>{vehicle.name}</Text>
-              <Text style={styles.vehicleRating}>{vehicle.rating}</Text>
             </View>
             
             <Text style={styles.vehicleDate}>
-              13 Jun '25,8AM (Fri) → 13 Jun '25, 11PM (Fri)
+              {formatDate(tripStartDate as string)}, {formatTime(tripStartTime as string)} → {formatDate(tripEndDate as string)}, {formatTime(tripEndTime as string)}
             </Text>
             
             <Text style={styles.pickupLocation}>
@@ -231,8 +345,16 @@ export default function PaymentScreen() {
               <View style={[styles.radioButton, selectedPayment === 'google-pay' && styles.radioButtonSelected]} />
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.payButton} onPress={handlePayment}>
-              <Text style={styles.payButtonText}>PAY ₹{price}.00</Text>
+            <TouchableOpacity 
+              style={[styles.payButton, loading && styles.payButtonDisabled]} 
+              onPress={handlePayment}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.payButtonText}>PAY ₹{price}</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -313,7 +435,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 16,
@@ -323,32 +444,12 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+    marginRight: 16,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
-    flex: 1,
-    marginLeft: 16,
-  },
-  timerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EBF8FF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 4,
-  },
-  timerText: {
-    fontSize: 12,
-    color: '#059669',
-    fontWeight: '500',
-  },
-  timerValue: {
-    fontSize: 12,
-    color: '#059669',
-    fontWeight: '600',
   },
   content: {
     flex: 1,
@@ -565,6 +666,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  payButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   payButtonText: {
     fontSize: 18,
