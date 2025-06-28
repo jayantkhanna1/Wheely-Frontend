@@ -90,7 +90,7 @@ export default function RegisterScreen() {
 
       if (response.ok) {
         // Check for successful registration message
-        if (data.message === "Customer registered successfully. OTP sent to email." || 
+        if (data.message === "User registered successfully. Please check your email for verification." || 
             data.message?.includes("OTP sent") || 
             data.success === true) {
           

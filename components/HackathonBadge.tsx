@@ -5,8 +5,8 @@ interface HackathonBadgeProps {
   link?: string;
 }
 
-export const HackathonBadge: React.FC<HackathonBadgeProps> = ({ 
-  link = "https://hackathon.wheely.xyz" 
+export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
+  link = "https://bolt.new/~/github-gbz9wglg "
 }) => {
   const handlePress = () => {
     if (link) {
@@ -15,13 +15,13 @@ export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
   };
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.container}
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <Image 
-        source={{ uri: 'https://images.pexels.com/photos/17483/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' }}
+      <Image
+        source={require('../assets/images/badge.jpeg')}
         style={styles.badgeImage}
       />
     </TouchableOpacity>
@@ -31,7 +31,7 @@ export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 20,
+    bottom: 20,
     right: 20,
     zIndex: 9999,
     width: 80,

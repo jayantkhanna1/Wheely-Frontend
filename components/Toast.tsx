@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 
 interface ToastProps {
@@ -10,10 +10,27 @@ interface ToastProps {
 
 export default function Toast({ message, type, visible, onHide }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  // Memoize the onHide callback to prevent unnecessary re-renders
+  const handleHide = useCallback(() => {
+    // Use setTimeout to defer the state update to the next tick
+    setTimeout(() => {
+      onHide();
+    }, 0);
+  }, [onHide]);
 
   useEffect(() => {
+    // Clear any existing animation
+    if (animationRef.current) {
+      animationRef.current.stop();
+    }
+
     if (visible) {
-      Animated.sequence([
+      // Reset opacity to 0 when showing
+      opacity.setValue(0);
+      
+      animationRef.current = Animated.sequence([
         Animated.timing(opacity, {
           toValue: 1,
           duration: 300,
@@ -25,11 +42,25 @@ export default function Toast({ message, type, visible, onHide }: ToastProps) {
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        onHide();
+      ]);
+
+      animationRef.current.start((finished) => {
+        if (finished) {
+          handleHide();
+        }
       });
+    } else {
+      // Ensure opacity is 0 when not visible
+      opacity.setValue(0);
     }
-  }, [visible, opacity, onHide]);
+
+    // Cleanup function
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+    };
+  }, [visible, opacity, handleHide]);
 
   if (!visible) return null;
 
