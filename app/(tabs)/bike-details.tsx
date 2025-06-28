@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
+import {
   View, 
   Text, 
   StyleSheet, 
@@ -12,7 +12,8 @@ import {
   Dimensions,
   TextInput,
   TouchableWithoutFeedback,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { ArrowLeft, MapPin, Calendar, Clock, Star, Share2, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -57,6 +58,27 @@ interface FAQ {
   expanded: boolean;
 }
 
+interface BackendVehicle {
+  id: number;
+  vehicle_name: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_type: string;
+  price_per_hour: string;
+  price_per_day: string;
+  location: any;
+  owner_name: string;
+  rating: number;
+  is_available: boolean;
+  primary_photo: string;
+  photos: string[];
+  seating_capacity: number;
+  fuel_type: string;
+  year: string;
+  transmission?: string;
+  features?: string[];
+}
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function BikeDetailsScreen() {
@@ -67,7 +89,7 @@ export default function BikeDetailsScreen() {
   const tripEndDate = params.tripEndDate as string;
   const tripStartTime = params.tripStartTime as string;
   const tripEndTime = params.tripEndTime as string;
-  
+
   const [location, setLocation] = useState(locationParam || 'Saket Colony, Delhi');
   const [tripStart, setTripStart] = useState(new Date());
   const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
@@ -82,113 +104,14 @@ export default function BikeDetailsScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [vehicleData, setVehicleData] = useState<any>(null);
+  const [vehicleData, setVehicleData] = useState<BackendVehicle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [duration, setDuration] = useState('');
+  const [bikeImages, setBikeImages] = useState<string[]>([]);
   
   useEffect(() => {
     loadUserData();
     fetchVehicleDetails();
-    
-    // Parse dates from URL params
-    if (tripStartDate && tripEndDate && tripStartTime && tripEndTime) {
-      try {
-        const parsedStartDate = parseDateTime(tripStartDate, tripStartTime);
-        const parsedEndDate = parseDateTime(tripEndDate, tripEndTime);
-        
-        if (parsedStartDate) setTripStart(parsedStartDate);
-        if (parsedEndDate) setTripEnd(parsedEndDate);
-        
-        // Calculate price and duration
-        if (parsedStartDate && parsedEndDate && vehicleData) {
-          calculatePriceAndDuration(parsedStartDate, parsedEndDate);
-        }
-      } catch (error) {
-        console.error('Error parsing dates:', error);
-      }
-    }
-  }, [vehicleData]);
-  
-  // Helper function to parse date and time from URL params
-  const parseDateTime = (dateStr: string, timeStr: string): Date | null => {
-    try {
-      // Handle different date formats
-      let date: Date;
-      
-      if (dateStr.includes('T')) {
-        // If it's already an ISO string
-        date = new Date(dateStr);
-      } else {
-        // If it's just a date string like YYYY-MM-DD
-        date = new Date(dateStr);
-      }
-      
-      // Now handle the time part
-      if (timeStr) {
-        const timeParts = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)?/i);
-        if (timeParts) {
-          let hours = parseInt(timeParts[1], 10);
-          const minutes = parseInt(timeParts[2], 10);
-          const seconds = timeParts[3] ? parseInt(timeParts[3], 10) : 0;
-          const period = timeParts[4]?.toLowerCase();
-          
-          // Convert to 24-hour format if needed
-          if (period === 'pm' && hours < 12) hours += 12;
-          if (period === 'am' && hours === 12) hours = 0;
-          
-          date.setHours(hours, minutes, seconds);
-        }
-      }
-      
-      return date;
-    } catch (error) {
-      console.error('Error parsing date/time:', error);
-      return null;
-    }
-  };
-  
-  // Calculate price based on duration
-  const calculatePriceAndDuration = (startDate: Date, endDate: Date) => {
-    if (!vehicleData) return;
-    
-    const hourlyRate = parseFloat(vehicleData.price_per_hour) || 0;
-    const dailyRate = parseFloat(vehicleData.price_per_day) || 0;
-    
-    // Calculate duration in milliseconds
-    const durationMs = endDate.getTime() - startDate.getTime();
-    
-    // Convert to hours and days
-    const durationHours = durationMs / (1000 * 60 * 60);
-    const durationDays = durationHours / 24;
-    
-    // Calculate price
-    let price = 0;
-    let durationText = '';
-    
-    if (durationHours < 24) {
-      // Round up to the next hour
-      const roundedHours = Math.ceil(durationHours);
-      price = roundedHours * hourlyRate;
-      durationText = `${roundedHours} hour${roundedHours !== 1 ? 's' : ''}`;
-    } else {
-      // Calculate full days and remaining hours
-      const fullDays = Math.floor(durationDays);
-      const remainingHours = Math.ceil(durationHours - (fullDays * 24));
-      
-      // Calculate price: (full days * daily rate) + (remaining hours * hourly rate)
-      price = (fullDays * dailyRate) + (remainingHours * hourlyRate);
-      
-      if (remainingHours > 0) {
-        durationText = `${fullDays} day${fullDays !== 1 ? 's' : ''} and ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
-      } else {
-        durationText = `${fullDays} day${fullDays !== 1 ? 's' : ''}`;
-      }
-    }
-    
-    setTotalPrice(price);
-    setDuration(durationText);
-  };
+  }, []);
 
   const loadUserData = async () => {
     try {
@@ -210,34 +133,50 @@ export default function BikeDetailsScreen() {
       setLoading(false);
       return;
     }
-    
+
     try {
-      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/vehicles/${vehicleId}/`;
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/vehicle/${vehicleId}/`;
       console.log('Fetching vehicle details from:', apiURL);
-      
-      const response = await fetch(apiURL);
-      
+
+      const response = await fetch(apiURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Vehicle details response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        console.log('Vehicle details:', data);
+        console.log('Vehicle details data:', data);
         setVehicleData(data);
-        
-        // Update bike images
-        if (data.photos && data.photos.length > 0) {
-          setBikeImages(data.photos.map((photo: any) => photo.photo_url));
+
+        // Set bike images
+        const images = [];
+        if (data.primary_photo) {
+          images.push(data.primary_photo);
+        }
+        if (data.photos && Array.isArray(data.photos)) {
+          images.push(...data.photos);
         }
         
-        // Calculate price and duration once we have the vehicle data
-        if (tripStart && tripEnd) {
-          calculatePriceAndDuration(tripStart, tripEnd);
+        // If no images, use placeholders
+        if (images.length === 0) {
+          images.push(
+            'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+            'https://images.pexels.com/photos/1119796/pexels-photo-1119796.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
+          );
         }
+        
+        setBikeImages(images);
       } else {
-        console.error('Failed to fetch vehicle details:', response.status);
+        console.error('Failed to fetch vehicle details');
         Alert.alert('Error', 'Failed to load bike details');
       }
     } catch (error) {
       console.error('Error fetching vehicle details:', error);
-      Alert.alert('Error', 'Network error while loading bike details');
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -247,50 +186,42 @@ export default function BikeDetailsScreen() {
     {
       id: '1',
       question: 'What documents do I need to rent a bike?',
-      answer: 'You need a valid driving license, a government-issued ID proof, and a credit/debit card for security deposit.',
+      answer: 'You need a valid driving license, identity proof, and a security deposit. For some premium bikes, additional documents may be required.',
       expanded: false
     },
     {
       id: '2',
       question: 'Is fuel included in the rental price?',
-      answer: 'Yes, we provide the bike with a full tank. You are expected to return it with a full tank, or we charge for the missing fuel plus a service fee.',
+      answer: 'No, fuel is not included in the rental price. You are responsible for refueling the bike during your rental period.',
       expanded: false
     },
     {
       id: '3',
       question: 'What happens if the bike breaks down?',
-      answer: 'In case of a breakdown, call our 24/7 roadside assistance. We\'ll either fix the issue or provide a replacement bike as soon as possible.',
+      answer: 'In case of a breakdown, contact our 24/7 customer support. We'll arrange for assistance or a replacement bike depending on your location.',
       expanded: false
     },
     {
       id: '4',
-      question: 'Is there a mileage limit for rentals?',
-      answer: 'Most of our rentals come with unlimited mileage. Any exceptions will be clearly mentioned in the bike details.',
+      question: 'Is there a mileage limit?',
+      answer: 'Most of our bike rentals come with unlimited mileage. However, some premium models may have daily mileage restrictions.',
       expanded: false
     },
     {
       id: '5',
-      question: 'Do you provide helmets with the bike?',
-      answer: 'Yes, we provide DOT-approved helmets for the rider and passenger at no extra cost.',
+      question: 'Can I extend my rental period?',
+      answer: 'Yes, you can extend your rental period through the app, subject to availability. It's recommended to do this at least 3 hours before your scheduled return time.',
       expanded: false
     },
     {
       id: '6',
-      question: 'What is the cancellation policy?',
-      answer: 'Free cancellation up to 24 hours before pickup. Cancellations within 24 hours may incur a fee of up to 50% of the rental cost.',
+      question: 'Is insurance included?',
+      answer: 'Basic insurance is included in the rental price. You can opt for premium insurance coverage for an additional fee.',
       expanded: false
     }
   ]);
 
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
-
-  const [bikeImages, setBikeImages] = useState([
-    'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/1119796/pexels-photo-1119796.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/1119796/pexels-photo-1119796.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-  ]);
 
   const reviews: Review[] = [
     {
@@ -321,7 +252,7 @@ export default function BikeDetailsScreen() {
 
   const tabs = ['Photos', 'Reviews', 'Features', 'Location', 'Offers'];
 
-  const features = [
+  const features = vehicleData?.features || [
     'Automatic Transmission',
     'Petrol Engine',
     'Electric Start',
@@ -434,14 +365,6 @@ export default function BikeDetailsScreen() {
           setTripEnd(newDate);
         }
       }
-      
-      // Recalculate price when dates change
-      if (vehicleData) {
-        calculatePriceAndDuration(
-          type === 'start' ? selectedDate : tripStart,
-          type === 'end' ? selectedDate : tripEnd
-        );
-      }
     }
   };
 
@@ -521,185 +444,61 @@ export default function BikeDetailsScreen() {
       Alert.alert('Agreement Required', 'Please agree to the terms and conditions before booking.');
       return;
     }
-    
+
+    if (!vehicleData) {
+      Alert.alert('Error', 'Vehicle data not available');
+      return;
+    }
+
     router.push({
       pathname: '/payment',
       params: {
         vehicleId: vehicleId,
         vehicleType: 'bike',
-        vehicleName: vehicleData?.vehicle_name || 'Honda Activa 6G',
-        price: totalPrice.toString(),
-        duration: duration,
-        pickupLocation: vehicleData?.location?.address || 'Location not specified',
-        tripStartDate: tripStart.toISOString(),
-        tripEndDate: tripEnd.toISOString(),
-        tripStartTime: formatDateTime(tripStart, 'time'),
-        tripEndTime: formatDateTime(tripEnd, 'time')
+        vehicleName: vehicleData.vehicle_name || `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}`,
+        price: vehicleData.price_per_hour,
+        duration: '12 hours',
+        pickupLocation: vehicleData.location?.address || location,
+        tripStartDate: tripStartDate,
+        tripEndDate: tripEndDate,
+        tripStartTime: tripStartTime,
+        tripEndTime: tripEndTime
       }
     });
   };
 
-  const scrollViewRef = useRef<ScrollView>(null);
-  
-  const scrollToSection = (tabName: string) => {
-    setActiveTab(tabName);
-    
-    // Scroll to the appropriate section
-    if (scrollViewRef.current) {
-      let yOffset = 0;
-      
-      switch (tabName) {
-        case 'Photos':
-          yOffset = 500; // Approximate position of Photos section
-          break;
-        case 'Reviews':
-          yOffset = 900; // Approximate position of Reviews section
-          break;
-        case 'Features':
-          yOffset = 1300; // Approximate position of Features section
-          break;
-        case 'Location':
-          yOffset = 1500; // Approximate position of Location section
-          break;
-        case 'Offers':
-          yOffset = 1700; // Approximate position of Offers section
-          break;
-      }
-      
-      scrollViewRef.current.scrollTo({ y: yOffset, animated: true });
-    }
-  };
-
-  if (loading) {
-    return (
-      <ScreenWrapper>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading bike details...</Text>
-          </View>
-        </SafeAreaView>
-      </ScreenWrapper>
-    );
-  }
-
-  return (
-    <ScreenWrapper>
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push({
-          pathname: '/bike-selection',
-          params: {
-            location: location,
-            tripStartDate: tripStartDate,
-            tripEndDate: tripEndDate,
-            tripStartTime: tripStartTime,
-            tripEndTime: tripEndTime
-          }
-        })} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Scrollable Content */}
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.content} 
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Trip Details - Editable */}
-        <View style={styles.tripDetails}>
-          <View style={styles.tripHeader}>
-            <View>
-              <Text style={styles.bikeTitle}>{vehicleData?.vehicle_name || 'Honda Activa 6G'}</Text>
-              <Text style={styles.bikeLocation}>{location}</Text>
-            </View>
-            <TouchableOpacity style={styles.shareButton}>
-              <Share2 size={20} color="#059669" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.dateTimeSection}>
-            <TouchableOpacity
-              style={styles.dateTimeItem}
-              onPress={() => handleDateTimeEdit('start')}
-            >
-              <Text style={styles.dateTimeLabel}>{formatDateTime(tripStart, 'date')}</Text>
-              <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
-              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.dateTimeItem}
-              onPress={() => handleDateTimeEdit('end')}
-            >
-              <Text style={styles.dateTimeLabel}>{formatDateTime(tripEnd, 'date')}</Text>
-              <Text style={styles.dateTimeValue}>{formatDateTime(tripEnd, 'time')}</Text>
-              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Bike Info */}
-        <View style={styles.bikeInfo}>
-          <View style={styles.bikeHeader}>
-            <Text style={styles.bikeName}>{vehicleData?.vehicle_name || 'Honda Activa 6G'}</Text>
-          </View>
-          <Text style={styles.bikeFeatures}>
-            {vehicleData?.transmission || 'Automatic'} • 
-            {vehicleData?.fuel_type || 'Petrol'} • 
-            {vehicleData?.seating_capacity || '2'} Seats
-          </Text>
-          <Text style={styles.bikeUrl}>https://maps.google.com/25716420/details/712681</Text>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {tabs.map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[styles.tab, activeTab === tab && styles.activeTab]}
-                onPress={() => scrollToSection(tab)}
-              >
-                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Photos Section */}
-        <View style={styles.sectionContainer} id="photos-section">
-          <Text style={styles.sectionTitle}>Photos</Text>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Photos':
+        return (
           <View style={styles.photosContainer}>
             <View style={styles.mainImageContainer}>
-              <Image 
-                source={{ 
-                  uri: bikeImages.length > 0 
-                    ? bikeImages[currentImageIndex] 
-                    : 'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-                }} 
-                style={styles.mainImage} 
-              />
-              <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
-                <ChevronLeft size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
-                <ChevronRight size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <View style={styles.imageCounter}>
-                <Text style={styles.imageCounterText}>
-                  {currentImageIndex + 1} / {bikeImages.length}
-                </Text>
-              </View>
+              {loading ? (
+                <View style={[styles.mainImage, styles.loadingContainer]}>
+                  <ActivityIndicator size="large" color="#059669" />
+                </View>
+              ) : (
+                <>
+                  <Image 
+                    source={{ uri: bikeImages[currentImageIndex] }} 
+                    style={styles.mainImage} 
+                  />
+                  <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
+                    <ChevronLeft size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
+                    <ChevronRight size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <View style={styles.imageCounter}>
+                    <Text style={styles.imageCounterText}>
+                      {currentImageIndex + 1} / {bikeImages.length}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
             <View style={styles.thumbnailContainer}>
-              {bikeImages.slice(0, 4).map((image, index) => (
+              {bikeImages.map((image, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[
@@ -711,70 +510,59 @@ export default function BikeDetailsScreen() {
                   <Image source={{ uri: image }} style={styles.thumbnailImage} />
                 </TouchableOpacity>
               ))}
-              {bikeImages.length > 4 && (
+              {bikeImages.length > 5 && (
                 <View style={styles.morePhotos}>
-                  <Text style={styles.morePhotosText}>+{bikeImages.length - 4} more</Text>
+                  <Text style={styles.morePhotosText}>+{bikeImages.length - 5} more</Text>
                 </View>
               )}
             </View>
           </View>
-        </View>
+        );
 
-        {/* Reviews Section */}
-        <View style={styles.sectionContainer} id="reviews-section">
-          <Text style={styles.sectionTitle}>Reviews & Rating</Text>
+      case 'Reviews':
+        return (
           <View style={styles.reviewsContainer}>
-            {reviews.length > 0 ? (
-              <>
-                <View style={styles.ratingOverview}>
-                  <View style={styles.ratingHeader}>
-                    <Text style={styles.ratingScore}>
-                      {vehicleData?.rating?.toFixed(1) || '4.6'}
-                    </Text>
-                    <View style={styles.ratingStarsContainer}>
-                      <View style={styles.ratingStars}>
-                        {renderStars(vehicleData?.rating || 4.6)}
-                      </View>
-                      <Text style={styles.reviewCount}>{reviews.length} Reviews</Text>
+            <View style={styles.ratingOverview}>
+              <Text style={styles.ratingTitle}>Reviews & Rating</Text>
+              <View style={styles.ratingHeader}>
+                <Text style={styles.ratingScore}>{vehicleData?.rating?.toFixed(1) || '4.6'}</Text>
+                <View style={styles.ratingStarsContainer}>
+                  <View style={styles.ratingStars}>
+                    {renderStars(vehicleData?.rating || 4.6)}
+                  </View>
+                  <Text style={styles.reviewCount}>10 Reviews</Text>
+                </View>
+              </View>
+            </View>
+
+            {reviews.map((item) => (
+              <View key={item.id} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewerInfo}>
+                    <View style={styles.reviewerAvatar}>
+                      <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
                     </View>
+                    <View>
+                      <Text style={styles.reviewerName}>{item.name}</Text>
+                      <Text style={styles.reviewDate}>{item.date}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.reviewRating}>
+                    {renderStars(item.rating)}
                   </View>
                 </View>
-
-                {reviews.map((item) => (
-                  <View key={item.id} style={styles.reviewCard}>
-                    <View style={styles.reviewHeader}>
-                      <View style={styles.reviewerInfo}>
-                        <View style={styles.reviewerAvatar}>
-                          <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
-                        </View>
-                        <View>
-                          <Text style={styles.reviewerName}>{item.name}</Text>
-                          <Text style={styles.reviewDate}>{item.date}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.reviewRating}>
-                        {renderStars(item.rating)}
-                      </View>
-                    </View>
-                    <Text style={styles.reviewComment}>{item.comment}</Text>
-                  </View>
-                ))}
-              </>
-            ) : (
-              <View style={styles.noReviewsContainer}>
-                <Text style={styles.noReviewsText}>No reviews yet</Text>
-                <Text style={styles.noReviewsSubtext}>Be the first to review this bike after your trip!</Text>
+                <Text style={styles.reviewComment}>{item.comment}</Text>
               </View>
-            )}
+            ))}
           </View>
-        </View>
+        );
 
-        {/* Features Section */}
-        <View style={styles.sectionContainer} id="features-section">
-          <Text style={styles.sectionTitle}>Features</Text>
+      case 'Features':
+        return (
           <View style={styles.featuresContainer}>
+            <Text style={styles.featuresTitle}>Bike Features</Text>
             <View style={styles.featuresList}>
-              {(vehicleData?.features || features).map((feature: string, index: number) => (
+              {features.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
                   <View style={styles.featureBullet} />
                   <Text style={styles.featureText}>{feature}</Text>
@@ -782,12 +570,12 @@ export default function BikeDetailsScreen() {
               ))}
             </View>
           </View>
-        </View>
+        );
 
-        {/* Location Section */}
-        <View style={styles.sectionContainer} id="location-section">
-          <Text style={styles.sectionTitle}>Location</Text>
+      case 'Location':
+        return (
           <View style={styles.locationContainer}>
+            <Text style={styles.locationTitle}>Bike Location</Text>
             <View style={styles.locationCard}>
               <View style={styles.locationIcon}>
                 <MapPin size={24} color="#059669" />
@@ -800,12 +588,12 @@ export default function BikeDetailsScreen() {
               </View>
             </View>
           </View>
-        </View>
+        );
 
-        {/* Offers Section */}
-        <View style={styles.sectionContainer} id="offers-section">
-          <Text style={styles.sectionTitle}>Special Offers</Text>
+      case 'Offers':
+        return (
           <View style={styles.offersContainer}>
+            <Text style={styles.offersTitle}>Special Offers</Text>
             <View style={styles.offerCard}>
               <Text style={styles.offerTitle}>First Time User</Text>
               <Text style={styles.offerDescription}>Get 20% off on your first booking</Text>
@@ -817,7 +605,122 @@ export default function BikeDetailsScreen() {
               <Text style={styles.offerCode}>Use code: WEEKEND15</Text>
             </View>
           </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <ScreenWrapper>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingFullScreen}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading bike details...</Text>
+          </View>
+        </SafeAreaView>
+      </ScreenWrapper>
+    );
+  }
+
+  return (
+    <ScreenWrapper>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.push('/bike-selection')} style={styles.backButton}>
+          <ArrowLeft size={24} color="#000000" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
+          <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Scrollable Content */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Trip Details - Editable */}
+        <View style={styles.tripDetails}>
+          <View style={styles.tripHeader}>
+            <View>
+              <Text style={styles.bikeTitle}>
+                {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Honda Activa 6G'}
+              </Text>
+              <Text style={styles.bikeLocation}>{location}</Text>
+            </View>
+            <TouchableOpacity style={styles.shareButton}>
+              <Share2 size={20} color="#059669" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.dateTimeSection}>
+            <TouchableOpacity
+              style={styles.dateTimeItem}
+              onPress={() => handleDateTimeEdit('start')}
+            >
+              <Text style={styles.dateTimeLabel}>
+                {tripStartDate ? new Date(tripStartDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripStart, 'date')}
+              </Text>
+              <Text style={styles.dateTimeValue}>
+                {tripStartTime || formatDateTime(tripStart, 'time')}
+              </Text>
+              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.dateTimeItem}
+              onPress={() => handleDateTimeEdit('end')}
+            >
+              <Text style={styles.dateTimeLabel}>
+                {tripEndDate ? new Date(tripEndDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripEnd, 'date')}
+              </Text>
+              <Text style={styles.dateTimeValue}>
+                {tripEndTime || formatDateTime(tripEnd, 'time')}
+              </Text>
+              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Bike Info */}
+        <View style={styles.bikeInfo}>
+          <View style={styles.bikeHeader}>
+            <Text style={styles.bikeName}>
+              {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Honda Activa 6G'}
+            </Text>
+            <View style={styles.ratingContainer}>
+              {renderStars(vehicleData?.rating || 4.6)}
+              <Text style={styles.reviewCount}>10 Reviews</Text>
+            </View>
+          </View>
+          <Text style={styles.bikeFeatures}>
+            {vehicleData ? 
+              `${vehicleData.transmission || 'Automatic'} • ${vehicleData.fuel_type || 'Petrol'} • ${vehicleData.seating_capacity || 2} Seats` : 
+              'Automatic • Petrol • 2 Seats'}
+          </Text>
+          <Text style={styles.bikeUrl}>https://maps.google.com/25716420/details/712681</Text>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, activeTab === tab && styles.activeTab]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tab Content */}
+        {renderTabContent()}
 
         {/* FAQs Section */}
         <View style={styles.faqsContainer}>
@@ -866,8 +769,8 @@ export default function BikeDetailsScreen() {
       {/* Fixed Price Bar */}
       <View style={styles.priceBar}>
         <View style={styles.priceInfo}>
-          <Text style={styles.priceAmount}>₹{totalPrice.toFixed(0)}</Text>
-          <Text style={styles.priceBreakup}>For {duration}</Text>
+          <Text style={styles.priceAmount}>₹{vehicleData?.price_per_hour || '45'}</Text>
+          <Text style={styles.priceBreakup}>Price Breakup</Text>
           <View style={styles.priceFeatures}>
             <Text style={styles.priceFeature}>• Helmet</Text>
             <Text style={styles.priceFeature}>• {vehicleData?.transmission || 'Automatic'}</Text>
@@ -875,7 +778,7 @@ export default function BikeDetailsScreen() {
           </View>
         </View>
         <TouchableOpacity 
-          style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]}
+          style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]} 
           onPress={handleBookNow}
           disabled={!isAgreed}
         >
@@ -1033,6 +936,7 @@ export default function BikeDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop: 30,
     backgroundColor: '#F9FAFB',
   },
   header: {
@@ -1197,19 +1101,8 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#FFFFFF',
   },
-  sectionContainer: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
-  },
   photosContainer: {
-    marginTop: 10,
+    padding: 20,
   },
   mainImageContainer: {
     position: 'relative',
@@ -1287,27 +1180,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   reviewsContainer: {
-    marginTop: 10,
-  },
-  noReviewsContainer: {
     padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-  },
-  noReviewsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  noReviewsSubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
   },
   ratingOverview: {
     marginBottom: 24,
+  },
+  ratingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
   },
   ratingHeader: {
     flexDirection: 'row',
@@ -1376,7 +1258,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   featuresContainer: {
-    marginTop: 10,
+    padding: 20,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
   },
   featuresList: {
     gap: 12,
@@ -1397,7 +1285,13 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   locationContainer: {
-    marginTop: 10,
+    padding: 20,
+  },
+  locationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
   },
   locationCard: {
     flexDirection: 'row',
@@ -1424,7 +1318,13 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   offersContainer: {
-    marginTop: 10,
+    padding: 20,
+  },
+  offersTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
   },
   offerCard: {
     backgroundColor: '#F0FDF4',
@@ -1723,14 +1623,94 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  slideMenu: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: screenWidth * 0.8,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: -2,
+      height: 0,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  menuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  menuProfileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  menuProfileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#059669',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuProfileText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  menuProfileName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  menuContent: {
+    flex: 1,
+    paddingTop: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  menuItemIcon: {
+    marginRight: 16,
+    width: 24,
+    alignItems: 'center',
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
   loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingFullScreen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
   },
   loadingText: {
+    marginTop: 10,
     fontSize: 16,
     color: '#6B7280',
-  },
+  }
 });
