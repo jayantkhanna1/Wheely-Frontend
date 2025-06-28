@@ -1,16 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Linking, Image } from 'react-native';
 
 interface HackathonBadgeProps {
-  eventName?: string;
   link?: string;
 }
 
-const { width } = Dimensions.get('window');
-
 export const HackathonBadge: React.FC<HackathonBadgeProps> = ({ 
-  eventName = "Hackathon 2025", 
-  link = "https://hackathon.example.com" 
+  link = "https://hackathon.wheely.xyz" 
 }) => {
   const handlePress = () => {
     if (link) {
@@ -24,9 +20,10 @@ export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <View style={styles.badge}>
-        <Text style={styles.text}>{eventName}</Text>
-      </View>
+      <Image 
+        source={{ uri: 'https://images.pexels.com/photos/17483/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' }}
+        style={styles.badgeImage}
+      />
     </TouchableOpacity>
   );
 };
@@ -34,31 +31,17 @@ export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 20,
+    right: 20,
     zIndex: 9999,
-    width: 120,
-    height: 120,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     overflow: 'hidden',
   },
-  badge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#FF5722',
-    paddingVertical: 5,
-    paddingHorizontal: 30,
-    transform: [{ rotate: '45deg' }, { translateX: 30 }, { translateY: -5 }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  text: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 10,
-    textAlign: 'center',
+  badgeImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   }
 });
