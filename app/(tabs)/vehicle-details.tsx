@@ -178,6 +178,47 @@ const VehicleDetailsScreen: React.FC = () => {
     }
 
     try {
+      // For testing purposes, let's create a mock vehicle
+      const mockVehicle: VehicleDetails = {
+        id: vehicleId,
+        name: 'Honda City 2022',
+        brand: 'Honda',
+        model: 'City',
+        year: 2022,
+        image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+        images: [
+          'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+          'https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+          'https://images.pexels.com/photos/1035108/pexels-photo-1035108.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
+        ],
+        status: 'active',
+        earnings: '₹15,240',
+        totalEarnings: '₹85,670',
+        rating: 4.8,
+        totalTrips: 12,
+        description: 'Well-maintained Honda City with excellent fuel efficiency. Perfect for city drives and long trips.',
+        pricePerDay: 2500,
+        pricePerHour: 150,
+        location: 'Koramangala, Bangalore',
+        availability: true,
+        features: ['AC', 'GPS', 'Bluetooth', 'USB Charging', 'Premium Sound'],
+        fuelType: 'Petrol',
+        transmission: 'Manual',
+        seats: 5,
+        mileage: '16.5 kmpl',
+        registrationNumber: 'KA05MZ1234',
+        insuranceExpiry: '2025-03-15',
+        pucExpiry: '2024-08-20',
+        lastServiced: '2024-11-15',
+      };
+
+      // Set the mock data
+      setVehicleData(mockVehicle);
+      setEditedData(mockVehicle);
+      setLoading(false);
+
+      // Uncomment the API call when ready to use real data
+      /*
       const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/host/getVehicle/${vehicleId}/`;
       console.log('Fetching vehicle details from:', apiURL);
 
@@ -204,6 +245,7 @@ const VehicleDetailsScreen: React.FC = () => {
         console.error('API Error Response:', errorData);
         setError(errorData.message || `Failed to fetch vehicle details. Status: ${response.status}`);
       }
+      */
     } catch (error) {
       console.error('Error fetching vehicle details:', error);
       setError('Network error. Please check your connection and try again.');
@@ -284,6 +326,16 @@ const VehicleDetailsScreen: React.FC = () => {
     setLoading(true);
     
     try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update local state with edited data
+      setVehicleData(editedData);
+      setIsEditing(false);
+      Alert.alert('Success', 'Vehicle details updated successfully!');
+      
+      // Uncomment when ready to use real API
+      /*
       // Prepare data for API
       const updateData = {
         vehicle_id: vehicleId,
@@ -317,6 +369,7 @@ const VehicleDetailsScreen: React.FC = () => {
         const errorData = await response.json().catch(() => ({}));
         Alert.alert('Error', errorData.message || 'Failed to update vehicle details');
       }
+      */
     } catch (error) {
       console.error('Error updating vehicle:', error);
       Alert.alert('Error', 'Network error. Please check your connection and try again.');
@@ -343,6 +396,15 @@ const VehicleDetailsScreen: React.FC = () => {
             try {
               setLoading(true);
               
+              // Simulate API call
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              Alert.alert('Deleted', 'Vehicle has been removed from your listings.', [
+                { text: 'OK', onPress: () => router.back() }
+              ]);
+              
+              // Uncomment when ready to use real API
+              /*
               const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/host/deleteVehicle/`;
               
               const response = await fetch(apiURL, {
@@ -365,6 +427,7 @@ const VehicleDetailsScreen: React.FC = () => {
                 const errorData = await response.json().catch(() => ({}));
                 Alert.alert('Error', errorData.message || 'Failed to delete vehicle');
               }
+              */
             } catch (error) {
               console.error('Error deleting vehicle:', error);
               Alert.alert('Error', 'Network error. Please check your connection and try again.');
@@ -385,6 +448,22 @@ const VehicleDetailsScreen: React.FC = () => {
     try {
       setLoading(true);
       
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update local state
+      setVehicleData({
+        ...vehicleData,
+        status: newStatus,
+      });
+      
+      Alert.alert(
+        'Status Updated',
+        `Vehicle is now ${newStatus}. ${newStatus === 'active' ? 'It will be visible to renters.' : 'It will be hidden from renters.'}`
+      );
+      
+      // Uncomment when ready to use real API
+      /*
       const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/host/updateVehicleStatus/`;
       
       const response = await fetch(apiURL, {
@@ -415,6 +494,7 @@ const VehicleDetailsScreen: React.FC = () => {
         const errorData = await response.json().catch(() => ({}));
         Alert.alert('Error', errorData.message || 'Failed to update vehicle status');
       }
+      */
     } catch (error) {
       console.error('Error updating status:', error);
       Alert.alert('Error', 'Network error. Please check your connection and try again.');
