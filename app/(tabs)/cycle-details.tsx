@@ -11,10 +11,12 @@ import {
   Animated,
   Dimensions,
   TextInput,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { ArrowLeft, MapPin, Calendar, Clock, Star, Share2, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,6 +33,27 @@ interface UserData {
   email_verified: boolean;
   phone_verified: boolean;
   driving_license_verified: boolean;
+}
+
+interface BackendVehicle {
+  id: number;
+  vehicle_name: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_type: string;
+  price_per_hour: string;
+  price_per_day: string;
+  location: any;
+  owner_name: string;
+  rating: number;
+  is_available: boolean;
+  primary_photo: string;
+  photos: string[];
+  seating_capacity: number;
+  fuel_type: string;
+  year: string;
+  transmission?: string;
+  features?: string[];
 }
 
 interface MenuItem {
@@ -59,7 +82,15 @@ interface FAQ {
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function CycleDetailsScreen() {
-  const [location, setLocation] = useState('Saket Colony, Delhi');
+  const params = useLocalSearchParams();
+  const vehicleId = params.vehicleId as string;
+  const locationParam = params.location as string;
+  const tripStartDate = params.tripStartDate as string;
+  const tripEndDate = params.tripEndDate as string;
+  const tripStartTime = params.tripStartTime as string;
+  const tripEndTime = params.tripEndTime as string;
+
+  const [location, setLocation] = useState(locationParam || 'Saket Colony, Delhi');
   const [tripStart, setTripStart] = useState(new Date());
   const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
   const [showLocationEdit, setShowLocationEdit] = useState(false);
@@ -73,73 +104,124 @@ export default function CycleDetailsScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [vehicleData, setVehicleData] = useState<BackendVehicle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cycleImages, setCycleImages] = useState<string[]>([]);
   
-    useEffect(() => {
-      loadUserData();
-    }, []);
-  
-    const loadUserData = async () => {
-      try {
-        const storedUserData = await AsyncStorage.getItem('user_data');
-        if (storedUserData) {
-          const parsedUserData = JSON.parse(storedUserData);
-          setUserData(parsedUserData);
-          console.log('User data loaded:', parsedUserData);
-        } else {
-          console.log('No user data found in storage');
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
+  useEffect(() => {
+    loadUserData();
+    fetchVehicleDetails();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
       }
-    };
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
+  const fetchVehicleDetails = async () => {
+    if (!vehicleId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/vehicle/${vehicleId}/`;
+      console.log('Fetching vehicle details from:', apiURL);
+
+      const response = await fetch(apiURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Vehicle details response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Vehicle details data:', data);
+        setVehicleData(data);
+
+        // Set cycle images
+        const images = [];
+        if (data.primary_photo) {
+          images.push(data.primary_photo);
+        }
+        if (data.photos && Array.isArray(data.photos)) {
+          images.push(...data.photos);
+        }
+        
+        // If no images, use placeholders
+        if (images.length === 0) {
+          images.push(
+            'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+            'https://images.pexels.com/photos/276517/pexels-photo-276517.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
+          );
+        }
+        
+        setCycleImages(images);
+      } else {
+        console.error('Failed to fetch vehicle details');
+        Alert.alert('Error', 'Failed to load bicycle details');
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle details:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [faqs, setFaqs] = useState<FAQ[]>([
     {
       id: '1',
-      question: 'What happens if a Perm employee cannot complete their contracted hours?',
-      answer: 'If a permanent employee cannot complete their contracted hours, they should notify their supervisor immediately. Alternative arrangements will be made to ensure coverage.',
+      question: 'What documents do I need to rent a bicycle?',
+      answer: 'You need a valid ID proof and a security deposit. No driving license is required for bicycles.',
       expanded: false
     },
     {
       id: '2',
-      question: 'How do I apply for the position of an NDIS Support Worker?',
-      answer: 'You can apply through our online portal or contact our HR department directly. All applications require relevant certifications and background checks.',
+      question: 'Is there a time limit for bicycle rentals?',
+      answer: 'Most bicycle rentals are available for hourly, half-day, or full-day periods. Extended rentals are also available.',
       expanded: false
     },
     {
       id: '3',
-      question: 'What experience is preferred for candidates applying for this role?',
-      answer: 'We prefer candidates with at least 2 years of experience in customer service or related fields, along with relevant certifications.',
+      question: 'What happens if the bicycle breaks down?',
+      answer: 'In case of a breakdown, contact our 24/7 customer support. We\'ll arrange for assistance or a replacement bicycle depending on your location.',
       expanded: false
     },
     {
       id: '4',
-      question: 'Are there any specific certifications required for this role?',
-      answer: 'Yes, valid driving license, first aid certification, and NDIS worker screening check are mandatory requirements.',
+      question: 'Are helmets provided with the bicycle?',
+      answer: 'Yes, helmets are provided with all bicycle rentals at no extra cost. We prioritize your safety.',
       expanded: false
     },
     {
       id: '5',
-      question: 'How long does the recruitment process typically take?',
-      answer: 'The recruitment process typically takes 2-3 weeks from application to final decision, including interviews and background checks.',
+      question: 'Can I extend my rental period?',
+      answer: 'Yes, you can extend your rental period through the app, subject to availability. It\'s recommended to do this at least 1 hour before your scheduled return time.',
       expanded: false
     },
     {
       id: '6',
-      question: 'When do I get my shifts?',
-      answer: 'Shifts are typically assigned 1 week in advance. You will receive notifications through our mobile app and email.',
+      question: 'Is insurance included?',
+      answer: 'Basic insurance is included in the rental price. You can opt for premium insurance coverage for an additional fee.',
       expanded: false
     }
   ]);
 
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
-
-  const cycleImages = [
-    'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/276517/pexels-photo-276517.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/276517/pexels-photo-276517.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-  ];
 
   const reviews: Review[] = [
     {
@@ -170,7 +252,7 @@ export default function CycleDetailsScreen() {
 
   const tabs = ['Photos', 'Reviews', 'Features', 'Location', 'Offers'];
 
-  const features = [
+  const features = vehicleData?.features || [
     '21 Speed Gears',
     'Lightweight Frame',
     'Disc Brakes',
@@ -358,14 +440,29 @@ export default function CycleDetailsScreen() {
   };
 
   const handleBookNow = () => {
+    if (!isAgreed) {
+      Alert.alert('Agreement Required', 'Please agree to the terms and conditions before booking.');
+      return;
+    }
+
+    if (!vehicleData) {
+      Alert.alert('Error', 'Vehicle data not available');
+      return;
+    }
+
     router.push({
       pathname: '/payment',
       params: {
+        vehicleId: vehicleId,
         vehicleType: 'cycle',
-        vehicleName: 'Trek FX 3 Disc',
-        price: '300',
+        vehicleName: vehicleData.vehicle_name || `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}`,
+        price: vehicleData.price_per_hour,
         duration: '12 hours',
-        pickupLocation: '8XM9+MwC, Special Wing, Prem Nagar...'
+        pickupLocation: vehicleData.location?.address || location,
+        tripStartDate: tripStartDate,
+        tripEndDate: tripEndDate,
+        tripStartTime: tripStartTime,
+        tripEndTime: tripEndTime
       }
     });
   };
@@ -376,18 +473,29 @@ export default function CycleDetailsScreen() {
         return (
           <View style={styles.photosContainer}>
             <View style={styles.mainImageContainer}>
-              <Image source={{ uri: cycleImages[currentImageIndex] }} style={styles.mainImage} />
-              <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
-                <ChevronLeft size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
-                <ChevronRight size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <View style={styles.imageCounter}>
-                <Text style={styles.imageCounterText}>
-                  {currentImageIndex + 1} / {cycleImages.length}
-                </Text>
-              </View>
+              {loading ? (
+                <View style={[styles.mainImage, styles.loadingContainer]}>
+                  <ActivityIndicator size="large" color="#059669" />
+                </View>
+              ) : (
+                <>
+                  <Image 
+                    source={{ uri: cycleImages[currentImageIndex] }} 
+                    style={styles.mainImage} 
+                  />
+                  <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
+                    <ChevronLeft size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
+                    <ChevronRight size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <View style={styles.imageCounter}>
+                    <Text style={styles.imageCounterText}>
+                      {currentImageIndex + 1} / {cycleImages.length}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
             <View style={styles.thumbnailContainer}>
               {cycleImages.map((image, index) => (
@@ -402,9 +510,11 @@ export default function CycleDetailsScreen() {
                   <Image source={{ uri: image }} style={styles.thumbnailImage} />
                 </TouchableOpacity>
               ))}
-              <View style={styles.morePhotos}>
-                <Text style={styles.morePhotosText}>+5 more</Text>
-              </View>
+              {cycleImages.length > 5 && (
+                <View style={styles.morePhotos}>
+                  <Text style={styles.morePhotosText}>+{cycleImages.length - 5} more</Text>
+                </View>
+              )}
             </View>
           </View>
         );
@@ -415,10 +525,10 @@ export default function CycleDetailsScreen() {
             <View style={styles.ratingOverview}>
               <Text style={styles.ratingTitle}>Reviews & Rating</Text>
               <View style={styles.ratingHeader}>
-                <Text style={styles.ratingScore}>4.8</Text>
+                <Text style={styles.ratingScore}>{vehicleData?.rating?.toFixed(1) || '4.8'}</Text>
                 <View style={styles.ratingStarsContainer}>
                   <View style={styles.ratingStars}>
-                    {renderStars(5)}
+                    {renderStars(vehicleData?.rating || 4.8)}
                   </View>
                   <Text style={styles.reviewCount}>10 Reviews</Text>
                 </View>
@@ -472,7 +582,7 @@ export default function CycleDetailsScreen() {
               </View>
               <View style={styles.locationInfo}>
                 <Text style={styles.locationAddress}>
-                  XUPH, MWC, Special Wing, Saket Colony, Delhi, 110046, India
+                  {vehicleData?.location?.address || 'XUPH, MWC, Special Wing, Saket Colony, Delhi, 110046, India'}
                 </Text>
                 <Text style={styles.locationDistance}>1.2 km away</Text>
               </View>
@@ -502,290 +612,323 @@ export default function CycleDetailsScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <ScreenWrapper>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingFullScreen}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading bicycle details...</Text>
+          </View>
+        </SafeAreaView>
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper>
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/cycle-selection')} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>{userData?.first_name[0]}{userData?.last_name[0]}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Scrollable Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Trip Details - Editable */}
-        <View style={styles.tripDetails}>
-          <View style={styles.tripHeader}>
-            <View>
-              <Text style={styles.cycleTitle}>Trek FX 3 Disc</Text>
-              <Text style={styles.cycleLocation}>{location}</Text>
-            </View>
-            <TouchableOpacity style={styles.shareButton}>
-              <Share2 size={20} color="#059669" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.dateTimeSection}>
-            <TouchableOpacity 
-              style={styles.dateTimeItem}
-              onPress={() => handleDateTimeEdit('start')}
-            >
-              <Text style={styles.dateTimeLabel}>{formatDateTime(tripStart, 'date')}</Text>
-              <Text style={styles.dateTimeValue}>{formatDateTime(tripStart, 'time')}</Text>
-              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.dateTimeItem}
-              onPress={() => handleDateTimeEdit('end')}
-            >
-              <Text style={styles.dateTimeLabel}>{formatDateTime(tripEnd, 'date')}</Text>
-              <Text style={styles.dateTimeValue}>{formatDateTime(tripEnd, 'time')}</Text>
-              <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Cycle Info */}
-        <View style={styles.cycleInfo}>
-          <View style={styles.cycleHeader}>
-            <Text style={styles.cycleName}>Trek FX 3 Disc</Text>
-            <View style={styles.ratingContainer}>
-              {renderStars(5)}
-              <Text style={styles.reviewCount}>10 Reviews</Text>
-            </View>
-          </View>
-          <Text style={styles.cycleFeatures}>24 Speed • Hybrid • Disc Brakes</Text>
-          <Text style={styles.cycleUrl}>https://maps.google.com/25716420/details/712681</Text>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {tabs.map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[styles.tab, activeTab === tab && styles.activeTab]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Tab Content */}
-        {renderTabContent()}
-
-        {/* FAQs Section */}
-        <View style={styles.faqsContainer}>
-          <Text style={styles.faqsTitle}>FAQs</Text>
-          {faqs.map((faq) => (
-            <TouchableOpacity
-              key={faq.id}
-              style={styles.faqItem}
-              onPress={() => toggleFAQ(faq.id)}
-            >
-              <View style={styles.faqHeader}>
-                <Text style={styles.faqQuestion}>{faq.question}</Text>
-                {faq.expanded ? (
-                  <ChevronUp size={20} color="#6B7280" />
-                ) : (
-                  <ChevronDown size={20} color="#6B7280" />
-                )}
-              </View>
-              {faq.expanded && (
-                <Text style={styles.faqAnswer}>{faq.answer}</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Policies Section */}
-        <View style={styles.policiesContainer}>
-          <Text style={styles.policiesTitle}>Policies and Agreement</Text>
-          <TouchableOpacity 
-            style={styles.policyItem}
-            onPress={() => setIsAgreed(!isAgreed)}
-          >
-            <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
-              {isAgreed && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.policyText}>
-              I hereby agree to the terms and conditions of the Lease Agreement with Host.
-            </Text>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push('/cycle-selection')} style={styles.backButton}>
+            <ArrowLeft size={24} color="#000000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
+            <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Spacing for Fixed Price Bar */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
+        {/* Scrollable Content */}
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Trip Details - Editable */}
+          <View style={styles.tripDetails}>
+            <View style={styles.tripHeader}>
+              <View>
+                <Text style={styles.cycleTitle}>
+                  {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Trek FX 3 Disc'}
+                </Text>
+                <Text style={styles.cycleLocation}>{location}</Text>
+              </View>
+              <TouchableOpacity style={styles.shareButton}>
+                <Share2 size={20} color="#059669" />
+              </TouchableOpacity>
+            </View>
 
-      {/* Fixed Price Bar */}
-      <View style={styles.priceBar}>
-        <View style={styles.priceInfo}>
-          <Text style={styles.priceAmount}>₹300</Text>
-          <Text style={styles.priceBreakup}>Price Breakup</Text>
-          <View style={styles.priceFeatures}>
-            <Text style={styles.priceFeature}>• Helmet</Text>
-            <Text style={styles.priceFeature}>• Lock</Text>
-            <Text style={styles.priceFeature}>• Lights</Text>
+            <View style={styles.dateTimeSection}>
+              <TouchableOpacity 
+                style={styles.dateTimeItem}
+                onPress={() => handleDateTimeEdit('start')}
+              >
+                <Text style={styles.dateTimeLabel}>
+                  {tripStartDate ? new Date(tripStartDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripStart, 'date')}
+                </Text>
+                <Text style={styles.dateTimeValue}>
+                  {tripStartTime || formatDateTime(tripStart, 'time')}
+                </Text>
+                <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.dateTimeItem}
+                onPress={() => handleDateTimeEdit('end')}
+              >
+                <Text style={styles.dateTimeLabel}>
+                  {tripEndDate ? new Date(tripEndDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) : formatDateTime(tripEnd, 'date')}
+                </Text>
+                <Text style={styles.dateTimeValue}>
+                  {tripEndTime || formatDateTime(tripEnd, 'time')}
+                </Text>
+                <Edit3 size={12} color="#6B7280" style={styles.editIcon} />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
-          <Text style={styles.bookButtonText}>Book Now</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Date/Time Pickers */}
-      {showStartPicker && Platform.OS !== 'web' && (
-        <View style={styles.pickerOverlay}>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select Start Date & Time</Text>
-              <TouchableOpacity onPress={() => setShowStartPicker(false)}>
-                <X size={20} color="#000000" />
-              </TouchableOpacity>
+          {/* Cycle Info */}
+          <View style={styles.cycleInfo}>
+            <View style={styles.cycleHeader}>
+              <Text style={styles.cycleName}>
+                {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Trek FX 3 Disc'}
+              </Text>
+              <View style={styles.ratingContainer}>
+                {renderStars(vehicleData?.rating || 4.8)}
+                <Text style={styles.reviewCount}>10 Reviews</Text>
+              </View>
             </View>
-            
-            <View style={styles.modeToggleContainer}>
-              <TouchableOpacity 
-                style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
-                onPress={() => setStartPickerMode('date')}
-              >
-                <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
-                  Date
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
-                onPress={() => setStartPickerMode('time')}
-              >
-                <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
-                  Time
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <DateTimePicker
-              value={tripStart}
-              mode={startPickerMode}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
-              minimumDate={new Date()}
-              textColor="#000000"
-              accentColor="#059669"
-            />
+            <Text style={styles.cycleFeatures}>
+              {vehicleData ? 
+                `${vehicleData.transmission || '21 Speed'} • ${vehicleData.fuel_type || 'Manual'} • ${vehicleData.seating_capacity || 1} Seat` : 
+                '24 Speed • Hybrid • Disc Brakes'}
+            </Text>
+            <Text style={styles.cycleUrl}>https://maps.google.com/25716420/details/712681</Text>
           </View>
-        </View>
-      )}
 
-      {showEndPicker && Platform.OS !== 'web' && (
-        <View style={styles.pickerOverlay}>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select End Date & Time</Text>
-              <TouchableOpacity onPress={() => setShowEndPicker(false)}>
-                <X size={20} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.modeToggleContainer}>
-              <TouchableOpacity 
-                style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
-                onPress={() => setEndPickerMode('date')}
-              >
-                <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
-                  Date
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
-                onPress={() => setEndPickerMode('time')}
-              >
-                <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
-                <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
-                  Time
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <DateTimePicker
-              value={tripEnd}
-              mode={endPickerMode}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
-              minimumDate={tripStart}
-              textColor="#000000"
-              accentColor="#059669"
-            />
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {tabs.map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.tab, activeTab === tab && styles.activeTab]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
-        </View>
-      )}
 
-      {/* Location Edit Modal */}
-      <Modal
-        visible={showLocationEdit}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowLocationEdit(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowLocationEdit(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.locationEditModal}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Edit Location</Text>
-                  <TouchableOpacity onPress={() => setShowLocationEdit(false)}>
-                    <X size={24} color="#000000" />
-                  </TouchableOpacity>
+          {/* Tab Content */}
+          {renderTabContent()}
+
+          {/* FAQs Section */}
+          <View style={styles.faqsContainer}>
+            <Text style={styles.faqsTitle}>FAQs</Text>
+            {faqs.map((faq) => (
+              <TouchableOpacity
+                key={faq.id}
+                style={styles.faqItem}
+                onPress={() => toggleFAQ(faq.id)}
+              >
+                <View style={styles.faqHeader}>
+                  <Text style={styles.faqQuestion}>{faq.question}</Text>
+                  {faq.expanded ? (
+                    <ChevronUp size={20} color="#6B7280" />
+                  ) : (
+                    <ChevronDown size={20} color="#6B7280" />
+                  )}
                 </View>
-                
-                <View style={styles.locationEditContent}>
-                  <TextInput
-                    style={styles.locationEditInput}
-                    value={tempLocation}
-                    onChangeText={setTempLocation}
-                    placeholder="Enter location"
-                    autoFocus={true}
-                  />
-                  
-                  <View style={styles.locationEditButtons}>
-                    <TouchableOpacity 
-                      style={styles.cancelButton}
-                      onPress={() => setShowLocationEdit(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.saveButton}
-                      onPress={saveLocationEdit}
-                    >
-                      <Text style={styles.saveButtonText}>Save</Text>
+                {faq.expanded && (
+                  <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Policies Section */}
+          <View style={styles.policiesContainer}>
+            <Text style={styles.policiesTitle}>Policies and Agreement</Text>
+            <TouchableOpacity 
+              style={styles.policyItem}
+              onPress={() => setIsAgreed(!isAgreed)}
+            >
+              <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
+                {isAgreed && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.policyText}>
+                I hereby agree to the terms and conditions of the Lease Agreement with Host.
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom Spacing for Fixed Price Bar */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+
+        {/* Fixed Price Bar */}
+        <View style={styles.priceBar}>
+          <View style={styles.priceInfo}>
+            <Text style={styles.priceAmount}>₹{vehicleData?.price_per_hour || '25'}</Text>
+            <Text style={styles.priceBreakup}>Price Breakup</Text>
+            <View style={styles.priceFeatures}>
+              <Text style={styles.priceFeature}>• Helmet</Text>
+              <Text style={styles.priceFeature}>• Lock</Text>
+              <Text style={styles.priceFeature}>• Lights</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]} 
+            onPress={handleBookNow}
+            disabled={!isAgreed}
+          >
+            <Text style={styles.bookButtonText}>Book Now</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Date/Time Pickers */}
+        {showStartPicker && Platform.OS !== 'web' && (
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Start Date & Time</Text>
+                <TouchableOpacity onPress={() => setShowStartPicker(false)}>
+                  <X size={20} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modeToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, startPickerMode === 'date' && styles.modeToggleButtonActive]}
+                  onPress={() => setStartPickerMode('date')}
+                >
+                  <Calendar size={16} color={startPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, startPickerMode === 'date' && styles.modeToggleTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, startPickerMode === 'time' && styles.modeToggleButtonActive]}
+                  onPress={() => setStartPickerMode('time')}
+                >
+                  <Clock size={16} color={startPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, startPickerMode === 'time' && styles.modeToggleTextActive]}>
+                    Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <DateTimePicker
+                value={tripStart}
+                mode={startPickerMode}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateTimeChange(event, date, 'start', startPickerMode)}
+                minimumDate={new Date()}
+                textColor="#000000"
+                accentColor="#059669"
+              />
+            </View>
+          </View>
+        )}
+
+        {showEndPicker && Platform.OS !== 'web' && (
+          <View style={styles.pickerOverlay}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select End Date & Time</Text>
+                <TouchableOpacity onPress={() => setShowEndPicker(false)}>
+                  <X size={20} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modeToggleContainer}>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, endPickerMode === 'date' && styles.modeToggleButtonActive]}
+                  onPress={() => setEndPickerMode('date')}
+                >
+                  <Calendar size={16} color={endPickerMode === 'date' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, endPickerMode === 'date' && styles.modeToggleTextActive]}>
+                    Date
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modeToggleButton, endPickerMode === 'time' && styles.modeToggleButtonActive]}
+                  onPress={() => setEndPickerMode('time')}
+                >
+                  <Clock size={16} color={endPickerMode === 'time' ? '#FFFFFF' : '#374151'} />
+                  <Text style={[styles.modeToggleText, endPickerMode === 'time' && styles.modeToggleTextActive]}>
+                    Time
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <DateTimePicker
+                value={tripEnd}
+                mode={endPickerMode}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => handleDateTimeChange(event, date, 'end', endPickerMode)}
+                minimumDate={tripStart}
+                textColor="#000000"
+                accentColor="#059669"
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Location Edit Modal */}
+        <Modal
+          visible={showLocationEdit}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowLocationEdit(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowLocationEdit(false)}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.locationEditModal}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Edit Location</Text>
+                    <TouchableOpacity onPress={() => setShowLocationEdit(false)}>
+                      <X size={24} color="#000000" />
                     </TouchableOpacity>
                   </View>
+                  
+                  <View style={styles.locationEditContent}>
+                    <TextInput
+                      style={styles.locationEditInput}
+                      value={tempLocation}
+                      onChangeText={setTempLocation}
+                      placeholder="Enter location"
+                      autoFocus={true}
+                    />
+                    
+                    <View style={styles.locationEditButtons}>
+                      <TouchableOpacity 
+                        style={styles.cancelButton}
+                        onPress={() => setShowLocationEdit(false)}
+                      >
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.saveButton}
+                        onPress={saveLocationEdit}
+                      >
+                        <Text style={styles.saveButtonText}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-<SlideMenu
-                visible={showMenu}
-                onClose={closeMenu}
-                userData={userData}
-                setUserData={setUserData}
-              />
-    </SafeAreaView>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+        <SlideMenu
+          visible={showMenu}
+          onClose={closeMenu}
+          userData={userData}
+          setUserData={setUserData}
+        />
+      </SafeAreaView>
     </ScreenWrapper>
   );
 }
@@ -1341,6 +1484,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  bookButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+  },
   bookButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -1550,4 +1697,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#374151',
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingFullScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#6B7280',
+  }
 });
