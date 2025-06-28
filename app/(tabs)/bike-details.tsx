@@ -198,7 +198,7 @@ export default function BikeDetailsScreen() {
     {
       id: '3',
       question: 'What happens if the bike breaks down?',
-      answer: 'In case of a breakdown, contact our 24/7 customer support. We'll arrange for assistance or a replacement bike depending on your location.',
+      answer: 'In case of a breakdown, contact our 24/7 customer support. We\'ll arrange for assistance or a replacement bike depending on your location.',
       expanded: false
     },
     {
@@ -210,7 +210,7 @@ export default function BikeDetailsScreen() {
     {
       id: '5',
       question: 'Can I extend my rental period?',
-      answer: 'Yes, you can extend your rental period through the app, subject to availability. It's recommended to do this at least 3 hours before your scheduled return time.',
+      answer: 'Yes, you can extend your rental period through the app, subject to availability. It\'s recommended to do this at least 3 hours before your scheduled return time.',
       expanded: false
     },
     {
