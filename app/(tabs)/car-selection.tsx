@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
   Image,
   Modal,
@@ -637,16 +636,16 @@ export default function CarSelectionScreen() {
 
   return (
     <ScreenWrapper>
-    <SafeAreaView style={styles.container}>
-      <View>
-        <ScrollView>
+      <SafeAreaView style={styles.container}>
+        {/* Main content container */}
+        <View style={styles.mainContent}>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ArrowLeft size={24} color="#000000" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-              <Text style={styles.profileText}>{userData?.first_name[0]}{userData?.last_name[0]}</Text>
+              <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
             </TouchableOpacity>
           </View>
 
@@ -681,7 +680,7 @@ export default function CarSelectionScreen() {
             <Text style={styles.subtitle}>Everyday booking made quick and easy!</Text>
           </View>
 
-          {/* Filter and Sort Bar - Scrollable */}
+          {/* Filter and Sort Bar */}
           <View style={styles.filterBar}>
             <TouchableOpacity style={styles.filterButton} onPress={openFilters}>
               <Filter size={16} color="#059669" />
@@ -693,18 +692,19 @@ export default function CarSelectionScreen() {
               )}
             </TouchableOpacity>
 
-            <ScrollView
+            <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.filterTagsContainer}
               contentContainerStyle={styles.filterTagsContent}
-            >
-              {filters.filter(f => f.selected).map(filter => (
-                <View key={filter.id} style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>{filter.label}</Text>
+              data={filters.filter(f => f.selected)}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.filterTag}>
+                  <Text style={styles.filterTagText}>{item.label}</Text>
                 </View>
-              ))}
-            </ScrollView>
+              )}
+            />
 
             <TouchableOpacity style={styles.sortButton} onPress={openSort}>
               <ArrowUpDown size={16} color="#059669" />
@@ -712,7 +712,7 @@ export default function CarSelectionScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Car List - Scrollable Daily Ride Section */}
+          {/* Car List */}
           <FlatList
             data={cars}
             renderItem={renderCarCard}
@@ -721,95 +721,93 @@ export default function CarSelectionScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.carListContent}
           />
+        </View>
 
-          {/* Filters Modal - Scrollable */}
-          <Modal
-            visible={showFilters}
-            transparent={true}
-            animationType="none"
-            onRequestClose={closeFilters}
-          >
-            <TouchableWithoutFeedback onPress={closeFilters}>
-              <View style={styles.modalOverlay}>
-                <TouchableWithoutFeedback>
-                  <Animated.View
-                    style={[
-                      styles.filterModal,
-                      { transform: [{ translateX: slideAnim }] }
-                    ]}
-                  >
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Filters</Text>
-                      <TouchableOpacity onPress={closeFilters}>
-                        <X size={24} color="#000000" />
-                      </TouchableOpacity>
-                    </View>
+        {/* Filters Modal - Scrollable */}
+        <Modal
+          visible={showFilters}
+          transparent={true}
+          animationType="none"
+          onRequestClose={closeFilters}
+        >
+          <TouchableWithoutFeedback onPress={closeFilters}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <Animated.View
+                  style={[
+                    styles.filterModal,
+                    { transform: [{ translateX: slideAnim }] }
+                  ]}
+                >
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Filters</Text>
+                    <TouchableOpacity onPress={closeFilters}>
+                      <X size={24} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
 
-                    <FlatList
-                      data={filters}
-                      renderItem={renderFilterOption}
-                      keyExtractor={(item) => item.id}
-                      style={styles.filterList}
-                      showsVerticalScrollIndicator={false}
-                    />
+                  <FlatList
+                    data={filters}
+                    renderItem={renderFilterOption}
+                    keyExtractor={(item) => item.id}
+                    style={styles.filterList}
+                    showsVerticalScrollIndicator={false}
+                  />
 
-                    <View style={styles.modalFooter}>
-                      <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
-                        <Text style={styles.applyButtonText}>Apply Filters</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </Animated.View>
-                </TouchableWithoutFeedback>
-              </View>
-            </TouchableWithoutFeedback>
-          </Modal>
+                  <View style={styles.modalFooter}>
+                    <TouchableOpacity style={styles.applyButton} onPress={closeFilters}>
+                      <Text style={styles.applyButtonText}>Apply Filters</Text>
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
 
-          {/* Sort Modal - Scrollable */}
-          <Modal
-            visible={showSort}
-            transparent={true}
-            animationType="none"
-            onRequestClose={closeSort}
-          >
-            <TouchableWithoutFeedback onPress={closeSort}>
-              <View style={styles.modalOverlay}>
-                <TouchableWithoutFeedback>
-                  <Animated.View
-                    style={[
-                      styles.sortModal,
-                      { transform: [{ translateX: sortSlideAnim }] }
-                    ]}
-                  >
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Sort By</Text>
-                      <TouchableOpacity onPress={closeSort}>
-                        <X size={24} color="#000000" />
-                      </TouchableOpacity>
-                    </View>
+        {/* Sort Modal - Scrollable */}
+        <Modal
+          visible={showSort}
+          transparent={true}
+          animationType="none"
+          onRequestClose={closeSort}
+        >
+          <TouchableWithoutFeedback onPress={closeSort}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <Animated.View
+                  style={[
+                    styles.sortModal,
+                    { transform: [{ translateX: sortSlideAnim }] }
+                  ]}
+                >
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Sort By</Text>
+                    <TouchableOpacity onPress={closeSort}>
+                      <X size={24} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
 
-                    <FlatList
-                      data={sortOptions}
-                      renderItem={renderSortOption}
-                      keyExtractor={(item) => item.id}
-                      style={styles.sortList}
-                      showsVerticalScrollIndicator={false}
-                    />
-                  </Animated.View>
-                </TouchableWithoutFeedback>
-              </View>
-            </TouchableWithoutFeedback>
-          </Modal>
+                  <FlatList
+                    data={sortOptions}
+                    renderItem={renderSortOption}
+                    keyExtractor={(item) => item.id}
+                    style={styles.sortList}
+                    showsVerticalScrollIndicator={false}
+                  />
+                </Animated.View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
 
-          <SlideMenu
-            visible={showMenu}
-            onClose={closeMenu}
-            userData={userData}
-            setUserData={setUserData}
-          />
-        </ScrollView>
-      </View>
-      
-    </SafeAreaView>
+        <SlideMenu
+          visible={showMenu}
+          onClose={closeMenu}
+          userData={userData}
+          setUserData={setUserData}
+        />
+      </SafeAreaView>
     </ScreenWrapper>
   );
 }
@@ -818,6 +816,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  mainContent: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
