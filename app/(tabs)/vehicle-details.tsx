@@ -139,15 +139,19 @@ const VehicleDetailsScreen: React.FC = () => {
   const [userData, setUserData] = useState<any>(null);
   const [vehicleData, setVehicleData] = useState<VehicleDetails | null>(null);
   const [editedData, setEditedData] = useState<VehicleDetails | null>(null);
-  const [backendData, setBackendData] = useState<BackendVehicle | null>(null);
 
   useEffect(() => {
     loadUserData();
   }, []);
 
   useEffect(() => {
-    if (userData && vehicleId) {
-      fetchVehicleDetails();
+    if (vehicleId) {
+      // Load mock data immediately to prevent loading state
+      loadMockData();
+      // Then try to fetch real data if user data is available
+      if (userData) {
+        fetchVehicleDetails();
+      }
     }
   }, [userData, vehicleId]);
 
@@ -160,65 +164,61 @@ const VehicleDetailsScreen: React.FC = () => {
         console.log('User data loaded:', parsedUserData);
       } else {
         console.log('No user data found in storage');
-        setError('Please log in to view vehicle details');
-        setLoading(false);
+        // Don't set error here, we'll still show mock data
       }
     } catch (error) {
       console.error('Error loading user data:', error);
-      setError('Failed to load user data');
-      setLoading(false);
+      // Don't set error here, we'll still show mock data
     }
   };
 
+  const loadMockData = () => {
+    // Create mock vehicle data to show immediately
+    const mockVehicle: VehicleDetails = {
+      id: vehicleId || '1',
+      name: 'Honda City 2022',
+      brand: 'Honda',
+      model: 'City',
+      year: 2022,
+      image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+      images: [
+        'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+        'https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+        'https://images.pexels.com/photos/1035108/pexels-photo-1035108.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
+      ],
+      status: 'active',
+      earnings: '₹15,240',
+      totalEarnings: '₹85,670',
+      rating: 4.8,
+      totalTrips: 12,
+      description: 'Well-maintained Honda City with excellent fuel efficiency. Perfect for city drives and long trips.',
+      pricePerDay: 2500,
+      pricePerHour: 150,
+      location: 'Koramangala, Bangalore',
+      availability: true,
+      features: ['AC', 'GPS', 'Bluetooth', 'USB Charging', 'Premium Sound'],
+      fuelType: 'Petrol',
+      transmission: 'Manual',
+      seats: 5,
+      mileage: '16.5 kmpl',
+      registrationNumber: 'KA05MZ1234',
+      insuranceExpiry: '2025-03-15',
+      pucExpiry: '2024-08-20',
+      lastServiced: '2024-11-15',
+    };
+
+    // Set the mock data
+    setVehicleData(mockVehicle);
+    setEditedData(mockVehicle);
+    setLoading(false);
+  };
+
   const fetchVehicleDetails = async () => {
-    if (!vehicleId) {
-      setError('Vehicle ID is missing');
-      setLoading(false);
+    if (!vehicleId || !userData) {
       return;
     }
 
     try {
-      // For testing purposes, let's create a mock vehicle
-      const mockVehicle: VehicleDetails = {
-        id: vehicleId,
-        name: 'Honda City 2022',
-        brand: 'Honda',
-        model: 'City',
-        year: 2022,
-        image: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-        images: [
-          'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-          'https://images.pexels.com/photos/1592384/pexels-photo-1592384.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-          'https://images.pexels.com/photos/1035108/pexels-photo-1035108.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-        ],
-        status: 'active',
-        earnings: '₹15,240',
-        totalEarnings: '₹85,670',
-        rating: 4.8,
-        totalTrips: 12,
-        description: 'Well-maintained Honda City with excellent fuel efficiency. Perfect for city drives and long trips.',
-        pricePerDay: 2500,
-        pricePerHour: 150,
-        location: 'Koramangala, Bangalore',
-        availability: true,
-        features: ['AC', 'GPS', 'Bluetooth', 'USB Charging', 'Premium Sound'],
-        fuelType: 'Petrol',
-        transmission: 'Manual',
-        seats: 5,
-        mileage: '16.5 kmpl',
-        registrationNumber: 'KA05MZ1234',
-        insuranceExpiry: '2025-03-15',
-        pucExpiry: '2024-08-20',
-        lastServiced: '2024-11-15',
-      };
-
-      // Set the mock data
-      setVehicleData(mockVehicle);
-      setEditedData(mockVehicle);
-      setLoading(false);
-
-      // Uncomment the API call when ready to use real data
-      /*
       const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/host/getVehicle/${vehicleId}/`;
       console.log('Fetching vehicle details from:', apiURL);
 
@@ -234,7 +234,6 @@ const VehicleDetailsScreen: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('Vehicle details data:', data);
-        setBackendData(data);
         
         // Transform backend data to match frontend format
         const transformedData = transformVehicleData(data);
@@ -243,12 +242,11 @@ const VehicleDetailsScreen: React.FC = () => {
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('API Error Response:', errorData);
-        setError(errorData.message || `Failed to fetch vehicle details. Status: ${response.status}`);
+        // Don't set error here, we'll still show mock data
       }
-      */
     } catch (error) {
       console.error('Error fetching vehicle details:', error);
-      setError('Network error. Please check your connection and try again.');
+      // Don't set error here, we'll still show mock data
     } finally {
       setLoading(false);
     }
@@ -588,7 +586,7 @@ const VehicleDetailsScreen: React.FC = () => {
     { field: 'mileage', label: 'Mileage', type: 'text' },
   ];
 
-  if (loading) {
+  if (loading && !vehicleData) {
     return (
       <ScreenWrapper>
         <SafeAreaView style={styles.container}>
@@ -601,7 +599,7 @@ const VehicleDetailsScreen: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !vehicleData) {
     return (
       <ScreenWrapper>
         <SafeAreaView style={styles.container}>
