@@ -482,11 +482,6 @@ export default function CarSelectionScreen() {
 
         <View style={styles.carDetails}>
           <View style={styles.carDetailItem}>
-            <Star size={14} color="#FFA500" fill="#FFA500" />
-            <Text style={styles.carDetailText}>{item.rating}</Text>
-          </View>
-
-          <View style={styles.carDetailItem}>
             <MapPin size={14} color="#6B7280" />
             <Text style={styles.carDetailText}>{item.distance}</Text>
           </View>
@@ -642,7 +637,14 @@ export default function CarSelectionScreen() {
   const handleCarPress = (car: Car) => {
     router.push({
       pathname: '/car-details',
-      params: { vehicleId: car.id }
+      params: { 
+        vehicleId: car.id,
+        location: location,
+        tripStartDate: tripStartDate,
+        tripEndDate: tripEndDate,
+        tripStartTime: tripStartTime,
+        tripEndTime: tripEndTime
+      }
     });
   };
 
