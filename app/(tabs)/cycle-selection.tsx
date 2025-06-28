@@ -63,6 +63,7 @@ interface BackendVehicle {
   rating: number;
   is_available: boolean;
   primary_photo: string;
+  photos: any[];
   seating_capacity: number;
   fuel_type: string;
   year: string;
@@ -402,7 +403,7 @@ export default function CycleSelectionScreen() {
 
         if (backendData && backendData.length > 0) {
           // Transform backend data to match frontend Cycle interface
-          const transformedCycles = backendData.map((vehicle: BackendVehicle, index: number) => ({
+          const transformedCycles = backendData.map((vehicle: BackendVehicle) => ({
             id: vehicle.id.toString(),
             name: vehicle.vehicle_brand,
             model: vehicle.vehicle_model,
@@ -421,10 +422,6 @@ export default function CycleSelectionScreen() {
               'Lightweight',
               'Comfortable'
             ],
-            // Additional backend fields
-            owner_name: vehicle.owner_name,
-            location: vehicle.location,
-            is_available: vehicle.is_available
           }));
 
           console.log('Transformed cycles data:', transformedCycles);

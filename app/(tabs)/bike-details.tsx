@@ -48,7 +48,7 @@ interface BackendVehicle {
   rating: number;
   is_available: boolean;
   primary_photo: string;
-  photos: string[];
+  photos: any[];
   seating_capacity: number;
   fuel_type: string;
   year: string;
@@ -145,7 +145,6 @@ export default function BikeDetailsScreen() {
     }
 
     try {
-
       const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicle/${vehicleId}/`;
       console.log('Fetching vehicle details from:', apiURL);
 
@@ -164,21 +163,28 @@ export default function BikeDetailsScreen() {
         setVehicleData(data);
 
         // Set bike images
-        const images = [];
+        const images: string[] = [];
         
-        // Safely handle primary_photo
-        if (data.primary_photo && typeof data.primary_photo === 'string') {
+        // Process photos array
+        if (data.photos && Array.isArray(data.photos)) {
+          data.photos.forEach((photo: any) => {
+            // Check if photo is an object with a 'photo' property
+            if (photo && typeof photo === 'object' && photo.photo) {
+              images.push(photo.photo);
+            } 
+            // Check if photo is a string
+            else if (typeof photo === 'string') {
+              images.push(photo);
+            }
+          });
+        }
+        
+        // If no images found in photos array, try primary_photo
+        if (images.length === 0 && data.primary_photo) {
           images.push(data.primary_photo);
         }
         
-        // Safely handle photos array
-        if (data.photos && Array.isArray(data.photos)) {
-          // Filter out any non-string values
-          const validPhotos = data.photos.filter(photo => typeof photo === 'string');
-          images.push(...validPhotos);
-        }
-        
-        // If no images, use placeholders
+        // If still no images, use placeholders
         if (images.length === 0) {
           images.push(
             'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',

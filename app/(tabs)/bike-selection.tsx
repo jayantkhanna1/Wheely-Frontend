@@ -63,7 +63,7 @@ interface BackendVehicle {
   rating: number;
   is_available: boolean;
   primary_photo: string;
-  photos: string[];
+  photos: any[];
   seating_capacity: number;
   fuel_type: string;
   year: string;
