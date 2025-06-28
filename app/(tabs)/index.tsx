@@ -421,16 +421,29 @@ export default function HomeScreen() {
       return;
     }
 
+    // Format dates and times for URL parameters
+    const formatDateForURL = (date: Date) => {
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    };
+
+    const formatTimeForURL = (date: Date) => {
+      return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: true 
+      });
+    };
+
     // Navigate to appropriate selection screen based on vehicle type
     if (selectedVehicle === 'car') {
       router.push({
         pathname: '/car-selection',
         params: { 
           location: location,
-          tripStartDate: tripStart.toISOString(),
-          tripEndDate: tripEnd.toISOString(),
-          tripStartTime: tripStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-          tripEndTime: tripEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          tripStartDate: formatDateForURL(tripStart),
+          tripEndDate: formatDateForURL(tripEnd),
+          tripStartTime: formatTimeForURL(tripStart),
+          tripEndTime: formatTimeForURL(tripEnd)
         }
       });
     } else if (selectedVehicle === 'bike') {
@@ -438,10 +451,10 @@ export default function HomeScreen() {
         pathname: '/bike-selection',
         params: { 
           location: location,
-          tripStartDate: tripStart.toISOString(),
-          tripEndDate: tripEnd.toISOString(),
-          tripStartTime: tripStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }), 
-          tripEndTime: tripEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          tripStartDate: formatDateForURL(tripStart),
+          tripEndDate: formatDateForURL(tripEnd),
+          tripStartTime: formatTimeForURL(tripStart),
+          tripEndTime: formatTimeForURL(tripEnd)
         }
       });
     } else if (selectedVehicle === 'bicycle') {
@@ -449,10 +462,10 @@ export default function HomeScreen() {
         pathname: '/cycle-selection',
         params: {
           location: location,
-          tripStartDate: tripStart.toISOString(),
-          tripEndDate: tripEnd.toISOString(),
-          tripStartTime: tripStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }), 
-          tripEndTime: tripEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+          tripStartDate: formatDateForURL(tripStart),
+          tripEndDate: formatDateForURL(tripEnd),
+          tripStartTime: formatTimeForURL(tripStart),
+          tripEndTime: formatTimeForURL(tripEnd)
         }
       });
     }

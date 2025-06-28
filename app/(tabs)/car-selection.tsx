@@ -99,8 +99,6 @@ const { width: screenWidth } = Dimensions.get('window');
 export default function CarSelectionScreen() {
   const [cars, setCars] = useState<Car[]>([]);
   const [filteredCars, setFilteredCars] = useState<Car[]>([]);
-  const [tripStart, setTripStart] = useState(new Date());
-  const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -109,8 +107,14 @@ export default function CarSelectionScreen() {
   const sortSlideAnim = useRef(new Animated.Value(screenWidth)).current;
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
 
-
-  const { location, tripStartDate, tripEndDate, tripStartTime, tripEndTime } = useLocalSearchParams();
+  // Get search parameters from URL
+  const { 
+    location, 
+    tripStartDate, 
+    tripEndDate, 
+    tripStartTime, 
+    tripEndTime 
+  } = useLocalSearchParams();
 
   const [userData, setUserData] = useState<UserData | null>(null);
 
@@ -243,79 +247,114 @@ export default function CarSelectionScreen() {
 
   const searchVehicles = async () => {
     try {
-      // Format dates and times properly for the backend
-      const formatDate = (date: Date) => {
-        return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
-      };
-
-      const formatTime = (date: Date) => {
-        return date.toTimeString().split(' ')[0]; // Returns HH:MM:SS
-      };
-
-      // Helper function to safely parse date/time from URL params
-      const parseUrlDateTime = (dateParam: string | string[] | undefined, timeParam: string | string[] | undefined) => {
-        if (!dateParam || !timeParam) return null;
+      // Parse and validate the date and time parameters from URL
+      const parseDateTimeParam = (dateParam: string | string[] | undefined, timeParam: string | string[] | undefined): string | null => {
+        if (!dateParam || !timeParam) {
+          console.warn('Missing date or time parameter');
+          return null;
+        }
 
         try {
-          // Extract string values from arrays if needed
-          const dateString = Array.isArray(dateParam) ? dateParam[0] : dateParam;
-          const timeString = Array.isArray(timeParam) ? timeParam[0] : timeParam;
-
-          // Validate date format (should be YYYY-MM-DD)
-          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateRegex.test(dateString)) {
-            console.warn('Invalid date format:', dateString);
+          // Extract string values
+          const dateStr = Array.isArray(dateParam) ? dateParam[0] : dateParam;
+          const timeStr = Array.isArray(timeParam) ? timeParam[0] : timeParam;
+          
+          // Create a combined date-time string in ISO format
+          // First, ensure the date is in ISO format (YYYY-MM-DD)
+          let formattedDate = dateStr;
+          if (dateStr.includes('T')) {
+            // If it's a full ISO string, extract just the date part
+            formattedDate = dateStr.split('T')[0];
+          }
+          
+          // Format the time (ensure it has seconds)
+          let formattedTime = timeStr;
+          if (!formattedTime.includes(':')) {
+            console.warn('Invalid time format:', timeStr);
             return null;
           }
-
-          // Validate time format (should be HH:MM or HH:MM:SS)
-          const timeRegex = /^\d{2}:\d{2}(:\d{2})?$/;
-          if (!timeRegex.test(timeString)) {
-            console.warn('Invalid time format:', timeString);
-            return null;
+          
+          // If time doesn't have seconds, add them
+          if ((formattedTime.match(/:/g) || []).length === 1) {
+            formattedTime = `${formattedTime}:00`;
           }
-
-          // Create combined date-time string
-          const combinedDateTime = `${dateString}T${timeString}`;
-          const parsedDate = new Date(combinedDateTime);
-
-          // Check if the date is valid
-          if (isNaN(parsedDate.getTime())) {
-            console.warn('Invalid date created from:', combinedDateTime);
-            return null;
+          
+          // Remove any AM/PM indicators and convert to 24-hour format if needed
+          if (formattedTime.toLowerCase().includes('am') || formattedTime.toLowerCase().includes('pm')) {
+            // Parse time with AM/PM
+            const timeParts = formattedTime.match(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)/i);
+            if (timeParts) {
+              let hours = parseInt(timeParts[1], 10);
+              const minutes = parseInt(timeParts[2], 10);
+              const seconds = timeParts[3] ? parseInt(timeParts[3], 10) : 0;
+              const period = timeParts[4].toLowerCase();
+              
+              // Convert to 24-hour format
+              if (period === 'pm' && hours < 12) hours += 12;
+              if (period === 'am' && hours === 12) hours = 0;
+              
+              formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
           }
-
-          return parsedDate;
+          
+          // Combine date and time
+          return `${formattedDate}T${formattedTime}`;
         } catch (error) {
           console.error('Error parsing date/time:', error);
           return null;
         }
       };
 
-      // Create proper date/time objects
-      let startDate, endDate;
+      // Format dates for API request
+      const formatDateForAPI = (dateTimeStr: string | null): { date: string, time: string } | null => {
+        if (!dateTimeStr) return null;
+        
+        try {
+          const date = new Date(dateTimeStr);
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid date created from:', dateTimeStr);
+            return null;
+          }
+          
+          // Format date as YYYY-MM-DD
+          const formattedDate = date.toISOString().split('T')[0];
+          
+          // Format time as HH:MM:SS
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const seconds = date.getSeconds().toString().padStart(2, '0');
+          const formattedTime = `${hours}:${minutes}:${seconds}`;
+          
+          return { date: formattedDate, time: formattedTime };
+        } catch (error) {
+          console.error('Error formatting date for API:', error);
+          return null;
+        }
+      };
 
-      // Try to parse from URL params first
-      const urlStartDate = parseUrlDateTime(tripStartDate, tripStartTime);
-      const urlEndDate = parseUrlDateTime(tripEndDate, tripEndTime);
-
-      if (urlStartDate && urlEndDate) {
-        startDate = urlStartDate;
-        endDate = urlEndDate;
-        console.log('Using URL params for dates:', { startDate, endDate });
-      } else {
-        // Fallback to state values
-        startDate = tripStart;
-        endDate = tripEnd;
-        console.log('Using state values for dates:', { startDate, endDate });
+      // Parse start and end date/time from URL parameters
+      const startDateTime = parseDateTimeParam(tripStartDate, tripStartTime);
+      const endDateTime = parseDateTimeParam(tripEndDate, tripEndTime);
+      
+      console.log('Parsed start date/time:', startDateTime);
+      console.log('Parsed end date/time:', endDateTime);
+      
+      if (!startDateTime || !endDateTime) {
+        throw new Error('Invalid date/time parameters');
       }
-
-      // Validate that we have valid dates
-      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error('Invalid start or end date');
+      
+      // Format for API
+      const formattedStart = formatDateForAPI(startDateTime);
+      const formattedEnd = formatDateForAPI(endDateTime);
+      
+      if (!formattedStart || !formattedEnd) {
+        throw new Error('Failed to format date/time for API');
       }
 
       // Validate that start date is before end date
+      const startDate = new Date(startDateTime);
+      const endDate = new Date(endDateTime);
+      
       if (startDate >= endDate) {
         Alert.alert(
           'Invalid Date Range',
@@ -324,11 +363,6 @@ export default function CarSelectionScreen() {
         );
         return [];
       }
-
-      const formattedStartDate = formatDate(startDate);
-      const formattedEndDate = formatDate(endDate);
-      const formattedStartTime = formatTime(startDate);
-      const formattedEndTime = formatTime(endDate);
 
       // Build the API URL with properly formatted parameters
       const locationString = Array.isArray(location) ? location[0] : location;
@@ -342,7 +376,7 @@ export default function CarSelectionScreen() {
         return [];
       }
 
-      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicles/?vehicle_type=4_wheeler&location=${encodeURIComponent(locationString)}&start_date=${formattedStartDate}&end_date=${formattedEndDate}&start_time=${formattedStartTime}&end_time=${formattedEndTime}`;
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicles/?vehicle_type=4_wheeler&location=${encodeURIComponent(locationString)}&start_date=${formattedStart.date}&end_date=${formattedEnd.date}&start_time=${formattedStart.time}&end_time=${formattedEnd.time}`;
 
       console.log('API URL:', apiURL);
 
