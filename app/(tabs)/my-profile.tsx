@@ -15,32 +15,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import {
-  ArrowLeft,
-  Edit3,
-  Camera,
-  CheckCircle,
-  XCircle,
-  Phone,
-  Mail,
-  User,
-  MapPin,
-  Calendar,
-  Shield,
-  Eye,
-  EyeOff,
-  Save,
-  X,
-  Lock,
-  Settings,
-  Bell,
-  Globe,
-  UserCheck,
-  ImageIcon,
-  Download,
-  Trash2,
-  LogOut,
-} from 'lucide-react-native';
+import { ArrowLeft, CreditCard as Edit3, Camera, CircleCheck as CheckCircle, Circle as XCircle, Phone, Mail, User, MapPin, Calendar, Shield, Eye, EyeOff, Save, X, Lock, Settings, Bell, Globe, UserCheck, Image as ImageIcon, Download, Trash2, LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
