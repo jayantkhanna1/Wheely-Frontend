@@ -145,7 +145,8 @@ export default function CycleDetailsScreen() {
     }
 
     try {
-      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/vehicle/${vehicleId}/`;
+      // Use the correct API endpoint for vehicle details
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicle/${vehicleId}/`;
       console.log('Fetching vehicle details from:', apiURL);
 
       const response = await fetch(apiURL, {
@@ -164,11 +165,17 @@ export default function CycleDetailsScreen() {
 
         // Set cycle images
         const images = [];
-        if (data.primary_photo) {
+        
+        // Safely handle primary_photo
+        if (data.primary_photo && typeof data.primary_photo === 'string') {
           images.push(data.primary_photo);
         }
+        
+        // Safely handle photos array
         if (data.photos && Array.isArray(data.photos)) {
-          images.push(...data.photos);
+          // Filter out any non-string values
+          const validPhotos = data.photos.filter(photo => typeof photo === 'string');
+          images.push(...validPhotos);
         }
         
         // If no images, use placeholders
@@ -183,10 +190,22 @@ export default function CycleDetailsScreen() {
       } else {
         console.error('Failed to fetch vehicle details');
         Alert.alert('Error', 'Failed to load bicycle details');
+        
+        // Set default placeholder images
+        setCycleImages([
+          'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+          'https://images.pexels.com/photos/276517/pexels-photo-276517.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
+        ]);
       }
     } catch (error) {
       console.error('Error fetching vehicle details:', error);
       Alert.alert('Error', 'Network error. Please check your connection and try again.');
+      
+      // Set default placeholder images
+      setCycleImages([
+        'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
+        'https://images.pexels.com/photos/276517/pexels-photo-276517.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
+      ]);
     } finally {
       setLoading(false);
     }
@@ -1330,7 +1349,7 @@ const styles = StyleSheet.create({
   policiesContainer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#F3F4F6',
   },
   policyItem: {
     flexDirection: 'row',
