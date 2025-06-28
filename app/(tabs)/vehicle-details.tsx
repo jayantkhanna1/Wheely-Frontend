@@ -12,24 +12,7 @@ import {
   Switch,
   ActivityIndicator,
 } from 'react-native';
-import {
-  ArrowLeft,
-  Edit3,
-  Save,
-  X,
-  Star,
-  Users,
-  DollarSign,
-  Calendar,
-  MapPin,
-  Camera,
-  Settings,
-  Eye,
-  EyeOff,
-  Trash2,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react-native';
+import { ArrowLeft, CreditCard as Edit3, Save, X, Star, Users, DollarSign, Calendar, MapPin, Camera, Settings, Eye, EyeOff, Trash2, CircleCheck as CheckCircle, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
