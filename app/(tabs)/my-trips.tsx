@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   RefreshControl,
   Image,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import {
   ArrowLeft,
@@ -16,25 +18,58 @@ import {
   Clock,
   Car,
   Bike,
-  CarIcon,
+  Recycle as Bicycle,
   Filter,
   Search,
 } from 'lucide-react-native';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Trip {
   id: string;
-  type: 'bicycle' | 'bike' | 'car';
+  type: 'Bicycle' | '2_wheeler' | '4_wheeler';
   startLocation: string;
   endLocation: string;
   startTime: string;
   endTime: string;
   date: string;
-  status: 'completed' | 'ongoing' | 'cancelled' | 'upcoming';
+  status: 'confirmed' | 'ongoing' | 'cancelled' | 'completed' | 'upcoming';
   amount: number;
   distance: string;
   duration: string;
+  vehicleName: string;
+  vehicleImage: string;
+}
+
+interface BackendTrip {
+  id: number;
+  vehicle: {
+    id: number;
+    vehicle_name: string;
+    vehicle_brand: string;
+    vehicle_model: string;
+    vehicle_type: string;
+    photos: Array<{
+      id: number;
+      photo: string;
+      is_primary: boolean;
+    }>;
+    location: {
+      address: string;
+      city: string;
+    };
+    primary_photo?: string;
+  };
+  start_date: string;
+  end_date: string;
+  start_time: string;
+  end_time: string;
+  amount: string;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UserData {
@@ -53,103 +88,215 @@ interface MyTripsProps {
   userData?: UserData | null;
 }
 
-export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
+export const MyTrips: React.FC<MyTripsProps> = ({ userData: propUserData }) => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'completed' | 'ongoing' | 'upcoming'>('all');
-
-  // Sample trip data - replace with actual API call
-  const sampleTrips: Trip[] = [
-    {
-      id: '1',
-      type: 'car',
-      startLocation: 'Koramangala',
-      endLocation: 'Electronic City',
-      startTime: '9:00 AM',
-      endTime: '10:30 AM',
-      date: 'Jun 25, 2025',
-      status: 'completed',
-      amount: 450,
-      distance: '12.5 km',
-      duration: '1h 30m',
-    },
-    {
-      id: '2',
-      type: 'bike',
-      startLocation: 'Indiranagar',
-      endLocation: 'MG Road',
-      startTime: '2:00 PM',
-      endTime: '2:45 PM',
-      date: 'Jun 24, 2025',
-      status: 'completed',
-      amount: 85,
-      distance: '8.2 km',
-      duration: '45m',
-    },
-    {
-      id: '3',
-      type: 'bicycle',
-      startLocation: 'Cubbon Park',
-      endLocation: 'UB City Mall',
-      startTime: '7:00 AM',
-      endTime: '7:30 AM',
-      date: 'Jun 23, 2025',
-      status: 'completed',
-      amount: 25,
-      distance: '3.1 km',
-      duration: '30m',
-    },
-    {
-      id: '4',
-      type: 'car',
-      startLocation: 'Whitefield',
-      endLocation: 'Brigade Road',
-      startTime: '6:30 PM',
-      endTime: 'Ongoing',
-      date: 'Today',
-      status: 'ongoing',
-      amount: 0,
-      distance: '18.7 km',
-      duration: 'Ongoing',
-    },
-    {
-      id: '5',
-      type: 'bike',
-      startLocation: 'HSR Layout',
-      endLocation: 'Bannerghatta Road',
-      startTime: '11:00 AM',
-      endTime: '',
-      date: 'Jun 27, 2025',
-      status: 'upcoming',
-      amount: 0,
-      distance: '6.4 km',
-      duration: 'Est. 35m',
-    },
-  ];
+  const [userData, setUserData] = useState<UserData | null>(propUserData || null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTrips();
+    loadUserData();
   }, []);
 
-  const loadTrips = async () => {
-    // Replace with actual API call
-    setTrips(sampleTrips);
+  useEffect(() => {
+    if (userData) {
+      fetchTrips();
+    }
+  }, [userData]);
+
+  const loadUserData = async () => {
+    try {
+      if (propUserData) {
+        setUserData(propUserData);
+        return;
+      }
+
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
+        setError('Please log in to view your trips');
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setError('Failed to load user data');
+      setLoading(false);
+    }
+  };
+
+  const fetchTrips = async () => {
+    if (!userData || !userData.id || !userData.private_token) {
+      setError('User authentication required');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/user/myrides/`;
+      console.log('Fetching trips from:', apiURL);
+
+      const requestData = {
+        user_id: userData.id,
+        private_token: userData.private_token
+      };
+
+      console.log('Request data:', requestData);
+
+      const response = await fetch(apiURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log('Trips response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Trips data:', data);
+        
+        if (Array.isArray(data)) {
+          const transformedTrips = transformBackendTrips(data);
+          setTrips(transformedTrips);
+        } else {
+          console.error('Unexpected response format:', data);
+          setError('Unexpected data format received from server');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
+        setError(errorData.message || `Failed to fetch trips. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const transformBackendTrips = (backendTrips: BackendTrip[]): Trip[] => {
+    return backendTrips.map(trip => {
+      // Get the primary photo or the first photo in the array
+      let vehicleImage = '';
+      if (trip.vehicle.primary_photo) {
+        vehicleImage = trip.vehicle.primary_photo;
+      } else if (trip.vehicle.photos && trip.vehicle.photos.length > 0) {
+        const primaryPhoto = trip.vehicle.photos.find(photo => photo.is_primary);
+        vehicleImage = primaryPhoto ? primaryPhoto.photo : trip.vehicle.photos[0].photo;
+      }
+
+      // Determine vehicle type icon
+      const vehicleType = trip.vehicle.vehicle_type === 'Bicycle' ? 'Bicycle' :
+                         trip.vehicle.vehicle_type === '2_wheeler' ? '2_wheeler' : '4_wheeler';
+
+      // Format dates and times
+      const startDate = new Date(trip.start_date);
+      const endDate = new Date(trip.end_date);
+      
+      // Parse start and end times
+      let startTimeStr = trip.start_time;
+      let endTimeStr = trip.end_time;
+      
+      // If start_time and end_time are full ISO strings, extract just the time part
+      if (startTimeStr && startTimeStr.includes('T')) {
+        const startDateTime = new Date(startTimeStr);
+        startTimeStr = startDateTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+      
+      if (endTimeStr && endTimeStr.includes('T')) {
+        const endDateTime = new Date(endTimeStr);
+        endTimeStr = endDateTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+
+      // Calculate duration (simple approximation)
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+      const durationHours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      
+      let durationStr = '';
+      if (durationDays > 0) {
+        durationStr = `${durationDays}d ${durationHours}h`;
+      } else {
+        durationStr = `${durationHours}h`;
+      }
+
+      // Determine trip status
+      let status: Trip['status'] = 'confirmed';
+      if (trip.status === 'completed') {
+        status = 'completed';
+      } else if (trip.status === 'cancelled') {
+        status = 'cancelled';
+      } else {
+        const now = new Date();
+        if (startDate > now) {
+          status = 'upcoming';
+        } else if (endDate > now) {
+          status = 'ongoing';
+        }
+      }
+
+      return {
+        id: trip.id.toString(),
+        type: vehicleType,
+        startLocation: trip.vehicle.location.address || trip.vehicle.location.city || 'Unknown location',
+        endLocation: trip.vehicle.location.address || trip.vehicle.location.city || 'Unknown location',
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        date: startDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+        status: status,
+        amount: parseFloat(trip.amount),
+        distance: '~', // Not available in backend data
+        duration: durationStr,
+        vehicleName: trip.vehicle.vehicle_name,
+        vehicleImage: vehicleImage || getDefaultVehicleImage(vehicleType)
+      };
+    });
+  };
+
+  const getDefaultVehicleImage = (type: string) => {
+    switch (type) {
+      case 'Bicycle':
+        return 'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop';
+      case '2_wheeler':
+        return 'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop';
+      case '4_wheeler':
+      default:
+        return 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop';
+    }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadTrips();
-    setRefreshing(false);
+    await fetchTrips();
   };
 
   const getVehicleIcon = (type: string) => {
     switch (type) {
-      case 'bicycle':
+      case 'Bicycle':
+        return <Bicycle size={20} color="#059669" />;
+      case '2_wheeler':
         return <Bike size={20} color="#059669" />;
-      case 'bike':
-        return <Car size={20} color="#059669" />;
-      case 'car':
-        return <CarIcon size={20} color="#059669" />;
+      case '4_wheeler':
       default:
         return <Car size={20} color="#059669" />;
     }
@@ -180,8 +327,10 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
         return 'Cancelled';
       case 'upcoming':
         return 'Upcoming';
+      case 'confirmed':
+        return 'Confirmed';
       default:
-        return status;
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -193,16 +342,24 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
   const renderTripCard = (trip: Trip) => (
     <TouchableOpacity key={trip.id} style={styles.tripCard}>
       <View style={styles.tripHeader}>
-        <View style={styles.vehicleIconContainer}>
-          {getVehicleIcon(trip.type)}
+        <View style={styles.vehicleImageContainer}>
+          <Image 
+            source={{ uri: trip.vehicleImage }} 
+            style={styles.vehicleImage}
+            defaultSource={{ uri: getDefaultVehicleImage(trip.type) }}
+          />
         </View>
-        <View style={styles.tripInfo}>
+        <View style={styles.tripHeaderContent}>
+          <Text style={styles.vehicleName}>{trip.vehicleName}</Text>
           <Text style={styles.tripDate}>{trip.date}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(trip.status) + '20' }]}>
             <Text style={[styles.statusText, { color: getStatusColor(trip.status) }]}>
               {getStatusText(trip.status)}
             </Text>
           </View>
+        </View>
+        <View style={styles.vehicleIconContainer}>
+          {getVehicleIcon(trip.type)}
         </View>
       </View>
 
@@ -224,10 +381,6 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
           <Text style={styles.detailText}>{trip.startTime} - {trip.endTime}</Text>
         </View>
         <View style={styles.detailItem}>
-          <MapPin size={14} color="#6B7280" />
-          <Text style={styles.detailText}>{trip.distance}</Text>
-        </View>
-        <View style={styles.detailItem}>
           <Calendar size={14} color="#6B7280" />
           <Text style={styles.detailText}>{trip.duration}</Text>
         </View>
@@ -236,7 +389,7 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
       {trip.status === 'completed' && (
         <View style={styles.amountContainer}>
           <Text style={styles.amountLabel}>Amount Paid</Text>
-          <Text style={styles.amountValue}>₹{trip.amount}</Text>
+          <Text style={styles.amountValue}>₹{trip.amount.toFixed(2)}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -244,67 +397,81 @@ export const MyTrips: React.FC<MyTripsProps> = ({ userData }) => {
 
   return (
     <ScreenWrapper>
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Trips</Text>
-        <TouchableOpacity style={styles.searchButton}>
-          <Search size={20} color="#6B7280" />
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Trips</Text>
+          <TouchableOpacity style={styles.searchButton}>
+            <Search size={20} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {['all', 'ongoing', 'upcoming', 'completed'].map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterTab,
-                activeFilter === filter && styles.activeFilterTab
-              ]}
-              onPress={() => setActiveFilter(filter as any)}
-            >
-              <Text style={[
-                styles.filterText,
-                activeFilter === filter && styles.activeFilterText
-              ]}>
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+        {/* Filter Tabs */}
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {['all', 'ongoing', 'upcoming', 'completed'].map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                style={[
+                  styles.filterTab,
+                  activeFilter === filter && styles.activeFilterTab
+                ]}
+                onPress={() => setActiveFilter(filter as any)}
+              >
+                <Text style={[
+                  styles.filterText,
+                  activeFilter === filter && styles.activeFilterText
+                ]}>
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-      {/* Trips List */}
-      <ScrollView
-        style={styles.tripsContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {filteredTrips.length > 0 ? (
-          filteredTrips.map(renderTripCard)
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>No trips found</Text>
-            <Text style={styles.emptyStateText}>
-              {activeFilter === 'all' 
-                ? "You haven't taken any trips yet. Start exploring!"
-                : `No ${activeFilter} trips found.`
-              }
-            </Text>
+        {/* Trips List */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading your trips...</Text>
           </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchTrips}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.tripsContainer}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredTrips.length > 0 ? (
+              filteredTrips.map(renderTripCard)
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateTitle}>No trips found</Text>
+                <Text style={styles.emptyStateText}>
+                  {activeFilter === 'all' 
+                    ? "You haven't taken any trips yet. Start exploring!"
+                    : `No ${activeFilter} trips found.`
+                  }
+                </Text>
+              </View>
+            )}
+          </ScrollView>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
     </ScreenWrapper>
   );
 };
@@ -380,9 +547,34 @@ const styles = StyleSheet.create({
   },
   tripHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 12,
+  },
+  vehicleImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  vehicleImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  tripHeaderContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  vehicleName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  tripDate: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
   },
   vehicleIconContainer: {
     width: 40,
@@ -391,20 +583,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  tripInfo: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  tripDate: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
+    marginLeft: 8,
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   statusText: {
     fontSize: 10,
@@ -451,11 +636,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    gap: 6,
   },
   detailText: {
     fontSize: 12,
     color: '#6B7280',
-    marginLeft: 4,
   },
   amountContainer: {
     flexDirection: 'row',
@@ -492,6 +677,40 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
