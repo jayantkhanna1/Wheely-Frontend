@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   ArrowLeft,
@@ -21,9 +22,11 @@ import {
   Star,
   Plus,
   ChevronRight,
+  Recycle as Bicycle,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface EarningsCard {
   title: string;
@@ -42,37 +45,42 @@ interface HostVehicle {
   id: string;
   name: string;
   image: string;
-  status: 'active' | 'inactive' ;
+  status: 'active' | 'inactive';
   earnings: string;
   rating: number;
   trips: number;
+  type: string;
+}
+
+interface BackendVehicle {
+  id: number;
+  vehicle_name: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_type: string;
+  price_per_hour: string;
+  price_per_day: string;
+  location: any;
+  owner_name: string;
+  rating: number;
+  is_available: boolean;
+  primary_photo: string;
+  seating_capacity: number;
+  fuel_type: string;
+  year: string;
+  transmission?: string;
+  features?: string[];
+  total_bookings?: number;
 }
 
 const HostScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'vehicles' | 'earnings'>('overview');
+  const [hostVehicles, setHostVehicles] = useState<HostVehicle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userData, setUserData] = useState<any>(null);
   
-  // Mock data - replace with actual data from your API
-  const [hostVehicles, setHostVehicles] = useState<HostVehicle[]>([
-    {
-      id: '1',
-      name: 'Honda City 2022',
-      image: 'https://via.placeholder.com/150x100/E5E7EB/374151?text=Car',
-      status: 'active',
-      earnings: '₹15,240',
-      rating: 4.8,
-      trips: 12,
-    },
-    {
-      id: '2',
-      name: 'Maruti Swift 2021',
-      image: 'https://via.placeholder.com/150x100/E5E7EB/374151?text=Car',
-      status: 'inactive',
-      earnings: '₹8,950',
-      rating: 4.5,
-      trips: 7,
-    },
-  ]);
-
+  // Mock data for earnings
   const earningsData: EarningsCard[] = [
     {
       title: 'This Month',
@@ -111,21 +119,140 @@ const HostScreen: React.FC = () => {
     },
   ];
 
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
+    if (userData && activeTab === 'vehicles') {
+      fetchHostVehicles();
+    }
+  }, [userData, activeTab]);
+
+  const loadUserData = async () => {
+    try {
+      const storedUserData = await AsyncStorage.getItem('user_data');
+      if (storedUserData) {
+        const parsedUserData = JSON.parse(storedUserData);
+        setUserData(parsedUserData);
+        console.log('User data loaded:', parsedUserData);
+      } else {
+        console.log('No user data found in storage');
+        setError('Please log in to view your vehicles');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      setError('Failed to load user data');
+    }
+  };
+
+  const fetchHostVehicles = async () => {
+    if (!userData || !userData.id || !userData.private_token) {
+      setError('User authentication required');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/host/getAllVehicles`;
+      console.log('Fetching host vehicles from:', apiURL);
+
+      const requestData = {
+        user_id: userData.id,
+        private_token: userData.private_token
+      };
+
+      console.log('Request data:', requestData);
+
+      const response = await fetch(apiURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log('Host vehicles response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Host vehicles data:', data);
+        
+        if (Array.isArray(data)) {
+          const transformedVehicles = transformBackendVehicles(data);
+          setHostVehicles(transformedVehicles);
+        } else {
+          console.error('Unexpected response format:', data);
+          setError('Unexpected data format received from server');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
+        setError(errorData.message || `Failed to fetch vehicles. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error fetching host vehicles:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const transformBackendVehicles = (backendVehicles: BackendVehicle[]): HostVehicle[] => {
+    return backendVehicles.map(vehicle => {
+      // Get the primary photo or the first photo in the array
+      let vehicleImage = '';
+      if (vehicle.primary_photo) {
+        vehicleImage = vehicle.primary_photo;
+      } else if (vehicle.primary_photo === null) {
+        // Use default image based on vehicle type
+        if (vehicle.vehicle_type === 'Bicycle') {
+          vehicleImage = 'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop';
+        } else if (vehicle.vehicle_type === '2_wheeler') {
+          vehicleImage = 'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop';
+        } else {
+          vehicleImage = 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop';
+        }
+      }
+
+      return {
+        id: vehicle.id.toString(),
+        name: vehicle.vehicle_name,
+        image: vehicleImage,
+        status: vehicle.is_available ? 'active' : 'inactive',
+        earnings: `₹${(Math.random() * 10000).toFixed(0)}`, // Mock earnings since not provided by API
+        rating: vehicle.rating || 0,
+        trips: vehicle.total_bookings || 0,
+        type: vehicle.vehicle_type
+      };
+    });
+  };
+
   const handleAddVehicle = () => {
-    // Navigate to add vehicle screen
-    // Alert.alert('Add Vehicle', 'Navigate to vehicle registration form');
     router.push('/add-vehicle');
   };
+
   const handleAddBicycle = () => {
-    // Navigate to add bicycle screen
     router.push('/add-bicycle');
   };
 
   const handleVehiclePress = (vehicle: HostVehicle) => {
-    // Navigate to vehicle details screen
     router.push('/vehicle-details');
   };
-  
+
+  const getVehicleTypeIcon = (type: string) => {
+    switch (type) {
+      case 'Bicycle':
+        return <Bicycle size={20} color="#059669" />;
+      case '2_wheeler':
+        return <Bike size={20} color="#059669" />;
+      case '4_wheeler':
+      default:
+        return <Car size={20} color="#059669" />;
+    }
+  };
 
   const renderOverview = () => (
     <View style={styles.tabContent}>
@@ -146,15 +273,17 @@ const HostScreen: React.FC = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleAddVehicle}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleAddVehicle}
+          >
             <Plus size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Add Vehicle</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity style={styles.actionButtonSecondary}>
-            <Calendar size={20} color="#059669" />
-            <Text style={styles.actionButtonSecondaryText}>Add Bicycle</Text>
-          </TouchableOpacity> */}
-          <TouchableOpacity style={styles.actionButton} onPress={handleAddBicycle}>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleAddBicycle}
+          >
             <Bike size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Add Bicycle</Text>
           </TouchableOpacity>
@@ -184,22 +313,56 @@ const HostScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Vehicles</Text>
-          <TouchableOpacity onPress={handleAddVehicle}>
-            <Plus size={20} color="#059669" />
-          </TouchableOpacity>
+          <View style={styles.addButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.smallAddButton} 
+              onPress={handleAddVehicle}
+            >
+              <Car size={16} color="#059669" />
+              <Plus size={16} color="#059669" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.smallAddButton} 
+              onPress={handleAddBicycle}
+            >
+              <Bicycle size={16} color="#059669" />
+              <Plus size={16} color="#059669" />
+            </TouchableOpacity>
+          </View>
         </View>
         
-        {hostVehicles.length === 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading your vehicles...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton} 
+              onPress={fetchHostVehicles}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : hostVehicles.length === 0 ? (
           <View style={styles.emptyState}>
             <Car size={48} color="#9CA3AF" />
             <Text style={styles.emptyStateTitle}>No vehicles added yet</Text>
             <Text style={styles.emptyStateDescription}>
               Add your first vehicle to start earning
             </Text>
-            <TouchableOpacity style={styles.actionButton} onPress={handleAddVehicle}>
-              <Plus size={20} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Add Vehicle</Text>
-            </TouchableOpacity>
+            <View style={styles.emptyStateActions}>
+              <TouchableOpacity style={styles.actionButton} onPress={handleAddVehicle}>
+                <Car size={16} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Add Vehicle</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={handleAddBicycle}>
+                <Bicycle size={16} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Add Bicycle</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           hostVehicles.map((vehicle) => (
@@ -208,13 +371,20 @@ const HostScreen: React.FC = () => {
               style={styles.vehicleCard}
               onPress={() => handleVehiclePress(vehicle)}
             >
-              <Image source={{ uri: vehicle.image }} style={styles.vehicleImage} />
+              <Image 
+                source={{ uri: vehicle.image }} 
+                style={styles.vehicleImage}
+                defaultSource={{ uri: 'https://via.placeholder.com/150x100/E5E7EB/374151?text=Vehicle' }}
+              />
               <View style={styles.vehicleInfo}>
                 <View style={styles.vehicleHeader}>
                   <Text style={styles.vehicleName}>{vehicle.name}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(vehicle.status) }]}>
-                    <Text style={styles.statusText}>{vehicle.status.toUpperCase()}</Text>
+                  <View style={styles.vehicleTypeIcon}>
+                    {getVehicleTypeIcon(vehicle.type)}
                   </View>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(vehicle.status) }]}>
+                  <Text style={styles.statusText}>{vehicle.status.toUpperCase()}</Text>
                 </View>
                 <View style={styles.vehicleStats}>
                   <View style={styles.statItem}>
@@ -255,14 +425,14 @@ const HostScreen: React.FC = () => {
         <View style={styles.transactionCard}>
           <View style={styles.transactionInfo}>
             <Text style={styles.transactionTitle}>Trip Completed - Honda City</Text>
-            <Text style={styles.transactionDate}>Dec 20, 2024</Text>
+            <Text style={styles.transactionDate}>Dec 20, 2025</Text>
           </View>
           <Text style={styles.transactionAmount}>+₹2,400</Text>
         </View>
         <View style={styles.transactionCard}>
           <View style={styles.transactionInfo}>
             <Text style={styles.transactionTitle}>Trip Completed - Maruti Swift</Text>
-            <Text style={styles.transactionDate}>Dec 18, 2024</Text>
+            <Text style={styles.transactionDate}>Dec 18, 2025</Text>
           </View>
           <Text style={styles.transactionAmount}>+₹1,800</Text>
         </View>
@@ -399,6 +569,21 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 16,
   },
+  addButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  smallAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#059669',
+    borderRadius: 8,
+    padding: 8,
+    gap: 4,
+  },
   earningsScroll: {
     marginLeft: -16,
     paddingLeft: 16,
@@ -515,6 +700,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
+  emptyStateActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   vehicleCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -548,11 +737,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
+    flex: 1,
+  },
+  vehicleTypeIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F0FDF4',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
   statusText: {
     fontSize: 10,
@@ -617,6 +817,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#059669',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 10,
+  },
+  errorContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
