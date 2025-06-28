@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  Image,
-  Modal,
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  SafeAreaView, 
+  Image, 
+  Modal, 
   Animated,
   Dimensions,
   TextInput,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { ArrowLeft, MapPin, Calendar, Clock, Star, Share2, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -56,10 +58,86 @@ interface FAQ {
   expanded: boolean;
 }
 
+interface VehiclePhoto {
+  id: number;
+  photo: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
+interface VehicleDetails {
+  id: number;
+  vehicle_name: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_color: string;
+  vehicle_year: number;
+  vehicle_type: string;
+  transmission_type: string;
+  fuel_type: string;
+  seating_capacity: number;
+  price_per_hour: string;
+  price_per_day: string;
+  location: {
+    id: number;
+    address: string;
+    street: string;
+    colony: string;
+    road: string;
+    pincode: string;
+    city: string;
+    state: string;
+    country: string;
+    google_map_location: string;
+    created_at: string;
+    updated_at: string;
+  };
+  owner: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+    location: any;
+    driving_license: any;
+    driving_license_verified: boolean;
+    profile_picture: string | null;
+    date_of_birth: string;
+    email_verified: boolean;
+    phone_verified: boolean;
+    private_token: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+  };
+  vehicle_rc: string | null;
+  vehicle_insurance: string | null;
+  vehicle_pollution_certificate: string | null;
+  is_available: boolean;
+  is_verified: boolean;
+  rating: number;
+  total_bookings: number;
+  photos: VehiclePhoto[];
+  availability_slots: any[];
+  created_at: string;
+  updated_at: string;
+  category: string;
+  features: string[];
+  license_plate: string | null;
+}
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function BikeDetailsScreen() {
-  const [location, setLocation] = useState('Saket Colony, Delhi');
+  const params = useLocalSearchParams();
+  const vehicleId = params.vehicleId as string;
+  const locationParam = params.location as string;
+  const tripStartDateParam = params.tripStartDate as string;
+  const tripEndDateParam = params.tripEndDate as string;
+  const tripStartTimeParam = params.tripStartTime as string;
+  const tripEndTimeParam = params.tripEndTime as string;
+
+  const [location, setLocation] = useState(locationParam || 'Saket Colony, Delhi');
   const [tripStart, setTripStart] = useState(new Date());
   const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
   const [showLocationEdit, setShowLocationEdit] = useState(false);
@@ -73,10 +151,126 @@ export default function BikeDetailsScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [vehicleData, setVehicleData] = useState<VehicleDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [duration, setDuration] = useState('');
+
+  // Refs for scrolling to sections
+  const photosRef = useRef<View>(null);
+  const reviewsRef = useRef<View>(null);
+  const featuresRef = useRef<View>(null);
+  const locationRef = useRef<View>(null);
+  const offersRef = useRef<View>(null);
+  const faqsRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     loadUserData();
+    fetchVehicleDetails();
+    initializeDateTimes();
   }, []);
+
+  // Initialize date and time from URL parameters
+  const initializeDateTimes = () => {
+    try {
+      if (tripStartDateParam && tripStartTimeParam) {
+        const startDate = new Date(tripStartDateParam);
+        
+        // Parse time (handle different formats)
+        if (tripStartTimeParam.includes(':')) {
+          const [hours, minutes] = tripStartTimeParam.split(':');
+          startDate.setHours(parseInt(hours, 10));
+          startDate.setMinutes(parseInt(minutes, 10));
+        } else if (tripStartTimeParam.toLowerCase().includes('am') || tripStartTimeParam.toLowerCase().includes('pm')) {
+          // Handle 12-hour format with AM/PM
+          const timeMatch = tripStartTimeParam.match(/(\d+):(\d+)\s*(am|pm)/i);
+          if (timeMatch) {
+            let hours = parseInt(timeMatch[1], 10);
+            const minutes = parseInt(timeMatch[2], 10);
+            const period = timeMatch[3].toLowerCase();
+            
+            if (period === 'pm' && hours < 12) hours += 12;
+            if (period === 'am' && hours === 12) hours = 0;
+            
+            startDate.setHours(hours, minutes);
+          }
+        }
+        
+        setTripStart(startDate);
+      }
+      
+      if (tripEndDateParam && tripEndTimeParam) {
+        const endDate = new Date(tripEndDateParam);
+        
+        // Parse time (handle different formats)
+        if (tripEndTimeParam.includes(':')) {
+          const [hours, minutes] = tripEndTimeParam.split(':');
+          endDate.setHours(parseInt(hours, 10));
+          endDate.setMinutes(parseInt(minutes, 10));
+        } else if (tripEndTimeParam.toLowerCase().includes('am') || tripEndTimeParam.toLowerCase().includes('pm')) {
+          // Handle 12-hour format with AM/PM
+          const timeMatch = tripEndTimeParam.match(/(\d+):(\d+)\s*(am|pm)/i);
+          if (timeMatch) {
+            let hours = parseInt(timeMatch[1], 10);
+            const minutes = parseInt(timeMatch[2], 10);
+            const period = timeMatch[3].toLowerCase();
+            
+            if (period === 'pm' && hours < 12) hours += 12;
+            if (period === 'am' && hours === 12) hours = 0;
+            
+            endDate.setHours(hours, minutes);
+          }
+        }
+        
+        setTripEnd(endDate);
+      }
+    } catch (error) {
+      console.error('Error initializing date/times:', error);
+    }
+  };
+
+  // Calculate price based on duration
+  useEffect(() => {
+    if (vehicleData && tripStart && tripEnd) {
+      calculatePrice();
+    }
+  }, [vehicleData, tripStart, tripEnd]);
+
+  const calculatePrice = () => {
+    if (!vehicleData) return;
+
+    const hourlyRate = parseFloat(vehicleData.price_per_hour);
+    const dailyRate = parseFloat(vehicleData.price_per_day);
+    
+    // Calculate duration in milliseconds
+    const durationMs = tripEnd.getTime() - tripStart.getTime();
+    
+    // Convert to hours and days
+    const durationHours = durationMs / (1000 * 60 * 60);
+    const durationDays = Math.floor(durationHours / 24);
+    const remainingHours = Math.ceil(durationHours % 24);
+    
+    let price = 0;
+    let durationText = '';
+    
+    if (durationDays > 0) {
+      price += durationDays * dailyRate;
+      durationText += `${durationDays} day${durationDays > 1 ? 's' : ''}`;
+      
+      if (remainingHours > 0) {
+        price += remainingHours * hourlyRate;
+        durationText += ` ${remainingHours} hour${remainingHours > 1 ? 's' : ''}`;
+      }
+    } else {
+      // If less than a day, charge by hour
+      price = Math.max(1, Math.ceil(durationHours)) * hourlyRate;
+      durationText = `${Math.max(1, Math.ceil(durationHours))} hour${Math.ceil(durationHours) > 1 ? 's' : ''}`;
+    }
+    
+    setTotalPrice(price);
+    setDuration(durationText);
+  };
 
   const loadUserData = async () => {
     try {
@@ -93,147 +287,90 @@ export default function BikeDetailsScreen() {
     }
   };
 
+  const fetchVehicleDetails = async () => {
+    if (!vehicleId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicle/${vehicleId}/`;
+      console.log('Fetching vehicle details from:', apiURL);
+
+      const response = await fetch(apiURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Vehicle details response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Vehicle details data:', data);
+        setVehicleData(data);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
+        Alert.alert(
+          'Error',
+          errorData.error || errorData.message || `Failed to fetch vehicle details. Status: ${response.status}`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle details:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load vehicle details. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [faqs, setFaqs] = useState<FAQ[]>([
     {
       id: '1',
-      question: 'What happens if a Perm employee cannot complete their contracted hours?',
-      answer: 'If a permanent employee cannot complete their contracted hours, they should notify their supervisor immediately. Alternative arrangements will be made to ensure coverage.',
+      question: 'What documents do I need to rent a bike?',
+      answer: 'You need a valid driving license, a government-issued ID proof, and a credit/debit card for security deposit.',
       expanded: false
     },
     {
       id: '2',
-      question: 'How do I apply for the position of an NDIS Support Worker?',
-      answer: 'You can apply through our online portal or contact our HR department directly. All applications require relevant certifications and background checks.',
+      question: 'Is fuel included in the rental price?',
+      answer: 'Yes, our bikes come with a full tank of fuel. You are expected to return the bike with a full tank, or we charge for the missing fuel plus a service fee.',
       expanded: false
     },
     {
       id: '3',
-      question: 'What experience is preferred for candidates applying for this role?',
-      answer: 'We prefer candidates with at least 2 years of experience in customer service or related fields, along with relevant certifications.',
+      question: 'What happens if I return the bike late?',
+      answer: 'Late returns are charged at 1.5x the hourly rate for each additional hour. Please contact us if you need to extend your booking.',
       expanded: false
     },
     {
       id: '4',
-      question: 'Are there any specific certifications required for this role?',
-      answer: 'Yes, valid driving license, first aid certification, and NDIS worker screening check are mandatory requirements.',
+      question: 'Is insurance included with the bike rental?',
+      answer: 'Basic third-party insurance is included. For comprehensive coverage, you can purchase additional insurance during checkout.',
       expanded: false
     },
     {
       id: '5',
-      question: 'How long does the recruitment process typically take?',
-      answer: 'The recruitment process typically takes 2-3 weeks from application to final decision, including interviews and background checks.',
+      question: 'What if the bike breaks down during my rental period?',
+      answer: 'Call our 24/7 roadside assistance number provided in your booking confirmation. We'll either fix the issue or provide a replacement bike as soon as possible.',
       expanded: false
     },
     {
       id: '6',
-      question: 'When do I get my shifts?',
-      answer: 'Shifts are typically assigned 1 week in advance. You will receive notifications through our mobile app and email.',
+      question: 'Can I modify or cancel my booking?',
+      answer: 'Bookings can be modified or canceled up to 24 hours before the rental start time for a full refund. Changes within 24 hours may incur charges.',
       expanded: false
     }
   ]);
 
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
-
-  const bikeImages = [
-    'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/1119796/pexels-photo-1119796.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/1119796/pexels-photo-1119796.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/2116475/pexels-photo-2116475.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-  ];
-
-  const reviews: Review[] = [
-    {
-      id: '1',
-      name: 'Ananya Vishnoi',
-      rating: 5,
-      comment: 'I rode this bike around 150+ kms over 3 days very satisfied with the performance and mileage. I recommend this bike that an amazing experience, would love to go with this bike again in future.',
-      date: '2 days ago',
-      avatar: 'AV'
-    },
-    {
-      id: '2',
-      name: 'Rahul Sharma',
-      rating: 5,
-      comment: 'Excellent bike with amazing performance. The booking process was smooth and the bike was in perfect condition.',
-      date: '1 week ago',
-      avatar: 'RS'
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      rating: 4,
-      comment: 'Great experience overall. The bike was clean and well-maintained. Would definitely book again.',
-      date: '2 weeks ago',
-      avatar: 'PP'
-    }
-  ];
-
-  const tabs = ['Photos', 'Reviews', 'Features', 'Location', 'Offers'];
-
-  const features = [
-    'Automatic Transmission',
-    'Petrol Engine',
-    'Electric Start',
-    'Disc Brakes',
-    'LED Headlight',
-    'Digital Speedometer',
-    'USB Charging Port',
-    'Under Seat Storage',
-    'Comfortable Seating',
-    'Fuel Efficient'
-  ];
-
-  const menuItems: MenuItem[] = [
-    {
-      id: 'trips',
-      title: 'My Trips',
-      icon: <MapIcon size={24} color="#374151" />,
-      onPress: () => console.log('My Trips pressed')
-    },
-    {
-      id: 'contact',
-      title: 'Contact Us',
-      icon: <Phone size={24} color="#374151" />,
-      onPress: () => console.log('Contact Us pressed')
-    },
-    {
-      id: 'profile',
-      title: 'My Profile',
-      icon: <User size={24} color="#374151" />,
-      onPress: () => console.log('My Profile pressed')
-    },
-    {
-      id: 'rewards',
-      title: 'Rewards',
-      icon: <Gift size={24} color="#374151" />,
-      onPress: () => console.log('Rewards pressed')
-    },
-    {
-      id: 'offers',
-      title: 'Offers',
-      icon: <Percent size={24} color="#374151" />,
-      onPress: () => console.log('Offers pressed')
-    },
-    {
-      id: 'helpline',
-      title: 'Helpline Support',
-      icon: <HelpCircle size={24} color="#374151" />,
-      onPress: () => console.log('Helpline Support pressed')
-    },
-    {
-      id: 'policies',
-      title: 'Policies',
-      icon: <FileText size={24} color="#374151" />,
-      onPress: () => console.log('Policies pressed')
-    },
-    {
-      id: 'language',
-      title: 'Language',
-      icon: <Globe size={24} color="#374151" />,
-      onPress: () => console.log('Language pressed')
-    }
-  ];
 
   const formatDateTime = (date: Date, type: 'date' | 'time') => {
     if (type === 'date') {
@@ -326,25 +463,24 @@ export default function BikeDetailsScreen() {
     }
   };
 
-  const handleMenuItemPress = (item: MenuItem) => {
-    item.onPress();
-    closeMenu();
-  };
-
   const toggleFAQ = (faqId: string) => {
-    setFaqs(prev => prev.map(faq =>
-      faq.id === faqId
+    setFaqs(prev => prev.map(faq => 
+      faq.id === faqId 
         ? { ...faq, expanded: !faq.expanded }
         : faq
     ));
   };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % bikeImages.length);
+    if (vehicleData?.photos && vehicleData.photos.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % vehicleData.photos.length);
+    }
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + bikeImages.length) % bikeImages.length);
+    if (vehicleData?.photos && vehicleData.photos.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + vehicleData.photos.length) % vehicleData.photos.length);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -359,132 +495,207 @@ export default function BikeDetailsScreen() {
   };
 
   const handleBookNow = () => {
+    if (!isAgreed) {
+      Alert.alert('Agreement Required', 'Please agree to the terms and conditions before booking.');
+      return;
+    }
+
     router.push({
       pathname: '/payment',
       params: {
+        vehicleId: vehicleId,
         vehicleType: 'bike',
-        vehicleName: 'Honda Activa 6G',
-        price: '540',
-        duration: '12 hours',
-        pickupLocation: '8XM9+MwC, Special Wing, Prem Nagar...'
+        vehicleName: vehicleData?.vehicle_name || 'Honda Activa 6G',
+        price: totalPrice.toString(),
+        duration: duration,
+        pickupLocation: vehicleData?.location?.address || 'Location not specified',
+        tripStartDate: tripStart.toISOString().split('T')[0],
+        tripEndDate: tripEnd.toISOString().split('T')[0],
+        tripStartTime: tripStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        tripEndTime: tripEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
       }
     });
   };
 
+  const scrollToSection = (sectionRef: React.RefObject<View>) => {
+    if (sectionRef.current && scrollViewRef.current) {
+      sectionRef.current.measureLayout(
+        // @ts-ignore - This is a valid method but TypeScript doesn't recognize it
+        scrollViewRef.current.getInnerViewNode(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y, animated: true });
+        },
+        () => console.log('Failed to measure')
+      );
+    }
+  };
+
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Photos':
-        return (
+    return (
+      <View>
+        {/* Photos Section */}
+        <View ref={photosRef} style={[styles.sectionContainer, activeTab === 'Photos' && styles.activeSection]}>
+          <Text style={styles.sectionTitle}>Photos</Text>
           <View style={styles.photosContainer}>
             <View style={styles.mainImageContainer}>
-              <Image source={{ uri: bikeImages[currentImageIndex] }} style={styles.mainImage} />
-              <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
-                <ChevronLeft size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
-                <ChevronRight size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <View style={styles.imageCounter}>
-                <Text style={styles.imageCounterText}>
-                  {currentImageIndex + 1} / {bikeImages.length}
-                </Text>
-              </View>
+              {loading ? (
+                <View style={[styles.mainImage, styles.loadingContainer]}>
+                  <ActivityIndicator size="large" color="#059669" />
+                </View>
+              ) : vehicleData?.photos && vehicleData.photos.length > 0 ? (
+                <>
+                  <Image 
+                    source={{ uri: vehicleData.photos[currentImageIndex].photo }} 
+                    style={styles.mainImage} 
+                  />
+                  <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
+                    <ChevronLeft size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
+                    <ChevronRight size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <View style={styles.imageCounter}>
+                    <Text style={styles.imageCounterText}>
+                      {currentImageIndex + 1} / {vehicleData.photos.length}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <View style={[styles.mainImage, styles.noImageContainer]}>
+                  <Text style={styles.noImageText}>No images available</Text>
+                </View>
+              )}
             </View>
-            <View style={styles.thumbnailContainer}>
-              {bikeImages.map((image, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.thumbnail,
-                    index === currentImageIndex && styles.activeThumbnail
-                  ]}
-                  onPress={() => setCurrentImageIndex(index)}
-                >
-                  <Image source={{ uri: image }} style={styles.thumbnailImage} />
-                </TouchableOpacity>
-              ))}
-              <View style={styles.morePhotos}>
-                <Text style={styles.morePhotosText}>+5 more</Text>
+            
+            {!loading && vehicleData?.photos && vehicleData.photos.length > 0 && (
+              <View style={styles.thumbnailContainer}>
+                {vehicleData.photos.map((photo, index) => (
+                  <TouchableOpacity
+                    key={photo.id}
+                    style={[
+                      styles.thumbnail,
+                      index === currentImageIndex && styles.activeThumbnail
+                    ]}
+                    onPress={() => setCurrentImageIndex(index)}
+                  >
+                    <Image source={{ uri: photo.photo }} style={styles.thumbnailImage} />
+                  </TouchableOpacity>
+                ))}
+                {vehicleData.photos.length > 5 && (
+                  <View style={styles.morePhotos}>
+                    <Text style={styles.morePhotosText}>+{vehicleData.photos.length - 5} more</Text>
+                  </View>
+                )}
               </View>
-            </View>
+            )}
           </View>
-        );
+        </View>
 
-      case 'Reviews':
-        return (
+        {/* Reviews Section */}
+        <View ref={reviewsRef} style={[styles.sectionContainer, activeTab === 'Reviews' && styles.activeSection]}>
+          <Text style={styles.sectionTitle}>Reviews & Rating</Text>
           <View style={styles.reviewsContainer}>
             <View style={styles.ratingOverview}>
-              <Text style={styles.ratingTitle}>Reviews & Rating</Text>
               <View style={styles.ratingHeader}>
-                <Text style={styles.ratingScore}>4.6</Text>
+                <Text style={styles.ratingScore}>{vehicleData?.rating?.toFixed(1) || '0.0'}</Text>
                 <View style={styles.ratingStarsContainer}>
                   <View style={styles.ratingStars}>
-                    {renderStars(5)}
+                    {renderStars(vehicleData?.rating || 0)}
                   </View>
-                  <Text style={styles.reviewCount}>10 Reviews</Text>
+                  <Text style={styles.reviewCount}>{vehicleData?.total_bookings || 0} Reviews</Text>
                 </View>
               </View>
             </View>
 
-            {reviews.map((item) => (
-              <View key={item.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewerInfo}>
-                    <View style={styles.reviewerAvatar}>
-                      <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.reviewerName}>{item.name}</Text>
-                      <Text style={styles.reviewDate}>{item.date}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.reviewRating}>
-                    {renderStars(item.rating)}
-                  </View>
-                </View>
-                <Text style={styles.reviewComment}>{item.comment}</Text>
-              </View>
-            ))}
+            <View style={styles.noReviewsContainer}>
+              <Text style={styles.noReviewsText}>No reviews found for this bike yet.</Text>
+              <Text style={styles.noReviewsSubtext}>Be the first to rent and review this bike!</Text>
+            </View>
           </View>
-        );
+        </View>
 
-      case 'Features':
-        return (
+        {/* Features Section */}
+        <View ref={featuresRef} style={[styles.sectionContainer, activeTab === 'Features' && styles.activeSection]}>
+          <Text style={styles.sectionTitle}>Bike Features</Text>
           <View style={styles.featuresContainer}>
-            <Text style={styles.featuresTitle}>Bike Features</Text>
             <View style={styles.featuresList}>
-              {features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
+              {loading ? (
+                <ActivityIndicator size="small" color="#059669" />
+              ) : (
+                <>
+                  {/* Display vehicle features from backend */}
+                  {vehicleData?.features && vehicleData.features.length > 0 ? (
+                    vehicleData.features.map((feature, index) => (
+                      <View key={index} style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>{feature}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    // Default features based on vehicle data
+                    <>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>{vehicleData?.transmission_type || 'Manual'} Transmission</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>{vehicleData?.fuel_type || 'Petrol'} Engine</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>{vehicleData?.seating_capacity || 2} Seats</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>Electric Start</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>Disc Brakes</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>LED Headlight</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>Digital Speedometer</Text>
+                      </View>
+                      <View style={styles.featureItem}>
+                        <View style={styles.featureBullet} />
+                        <Text style={styles.featureText}>USB Charging Port</Text>
+                      </View>
+                    </>
+                  )}
+                </>
+              )}
             </View>
           </View>
-        );
+        </View>
 
-      case 'Location':
-        return (
+        {/* Location Section */}
+        <View ref={locationRef} style={[styles.sectionContainer, activeTab === 'Location' && styles.activeSection]}>
+          <Text style={styles.sectionTitle}>Bike Location</Text>
           <View style={styles.locationContainer}>
-            <Text style={styles.locationTitle}>Bike Location</Text>
             <View style={styles.locationCard}>
               <View style={styles.locationIcon}>
                 <MapPin size={24} color="#059669" />
               </View>
               <View style={styles.locationInfo}>
                 <Text style={styles.locationAddress}>
-                  XUPH, MWC, Special Wing, Saket Colony, Delhi, 110046, India
+                  {vehicleData?.location?.address || 'Location not available'}
                 </Text>
                 <Text style={styles.locationDistance}>2.1 km away</Text>
               </View>
             </View>
           </View>
-        );
+        </View>
 
-      case 'Offers':
-        return (
+        {/* Offers Section */}
+        <View ref={offersRef} style={[styles.sectionContainer, activeTab === 'Offers' && styles.activeSection]}>
+          <Text style={styles.sectionTitle}>Special Offers</Text>
           <View style={styles.offersContainer}>
-            <Text style={styles.offersTitle}>Special Offers</Text>
             <View style={styles.offerCard}>
               <Text style={styles.offerTitle}>First Time User</Text>
               <Text style={styles.offerDescription}>Get 20% off on your first booking</Text>
@@ -496,33 +707,108 @@ export default function BikeDetailsScreen() {
               <Text style={styles.offerCode}>Use code: WEEKEND15</Text>
             </View>
           </View>
-        );
+        </View>
 
-      default:
-        return null;
-    }
+        {/* FAQs Section */}
+        <View ref={faqsRef} style={styles.faqsContainer}>
+          <Text style={styles.faqsTitle}>FAQs</Text>
+          {faqs.map((faq) => (
+            <TouchableOpacity
+              key={faq.id}
+              style={styles.faqItem}
+              onPress={() => toggleFAQ(faq.id)}
+            >
+              <View style={styles.faqHeader}>
+                <Text style={styles.faqQuestion}>{faq.question}</Text>
+                {faq.expanded ? (
+                  <ChevronUp size={20} color="#6B7280" />
+                ) : (
+                  <ChevronDown size={20} color="#6B7280" />
+                )}
+              </View>
+              {faq.expanded && (
+                <Text style={styles.faqAnswer}>{faq.answer}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Policies Section */}
+        <View style={styles.policiesContainer}>
+          <Text style={styles.policiesTitle}>Policies and Agreement</Text>
+          <TouchableOpacity 
+            style={styles.policyItem}
+            onPress={() => setIsAgreed(!isAgreed)}
+          >
+            <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
+              {isAgreed && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.policyText}>
+              I hereby agree to the terms and conditions of the Lease Agreement with Host.
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
+
+  if (loading) {
+    return (
+      <ScreenWrapper>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.push('/bike-selection')} style={styles.backButton}>
+              <ArrowLeft size={24} color="#000000" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
+              <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.loadingFullContainer}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Loading bike details...</Text>
+          </View>
+        </SafeAreaView>
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper>
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push('/bike-selection')} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => router.push({
+            pathname: '/bike-selection',
+            params: {
+              location: locationParam,
+              tripStartDate: tripStartDateParam,
+              tripEndDate: tripEndDateParam,
+              tripStartTime: tripStartTimeParam,
+              tripEndTime: tripEndTimeParam
+            }
+          })} 
+          style={styles.backButton}
+        >
           <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>{userData?.first_name[0]}{userData?.last_name[0]}</Text>
+          <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+      >
         {/* Trip Details - Editable */}
         <View style={styles.tripDetails}>
           <View style={styles.tripHeader}>
             <View>
-              <Text style={styles.bikeTitle}>Honda Activa 6G</Text>
+              <Text style={styles.bikeTitle}>{vehicleData?.vehicle_name || 'Honda Activa 6G'}</Text>
               <Text style={styles.bikeLocation}>{location}</Text>
             </View>
             <TouchableOpacity style={styles.shareButton}>
@@ -554,24 +840,30 @@ export default function BikeDetailsScreen() {
         {/* Bike Info */}
         <View style={styles.bikeInfo}>
           <View style={styles.bikeHeader}>
-            <Text style={styles.bikeName}>Honda Activa 6G</Text>
-            <View style={styles.ratingContainer}>
-              {renderStars(5)}
-              <Text style={styles.reviewCount}>10 Reviews</Text>
-            </View>
+            <Text style={styles.bikeName}>{vehicleData?.vehicle_name || 'Honda Activa 6G'}</Text>
           </View>
-          <Text style={styles.bikeFeatures}>Automatic • Petrol • 2 Seats</Text>
-          <Text style={styles.bikeUrl}>https://maps.google.com/25716420/details/712681</Text>
+          <Text style={styles.bikeFeatures}>
+            {vehicleData?.transmission_type || 'Automatic'} • {vehicleData?.fuel_type || 'Petrol'} • {vehicleData?.seating_capacity || 2} Seats
+          </Text>
         </View>
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {tabs.map((tab) => (
+            {['Photos', 'Reviews', 'Features', 'Location', 'Offers'].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 style={[styles.tab, activeTab === tab && styles.activeTab]}
-                onPress={() => setActiveTab(tab)}
+                onPress={() => {
+                  setActiveTab(tab);
+                  switch(tab) {
+                    case 'Photos': scrollToSection(photosRef); break;
+                    case 'Reviews': scrollToSection(reviewsRef); break;
+                    case 'Features': scrollToSection(featuresRef); break;
+                    case 'Location': scrollToSection(locationRef); break;
+                    case 'Offers': scrollToSection(offersRef); break;
+                  }
+                }}
               >
                 <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                   {tab}
@@ -584,46 +876,6 @@ export default function BikeDetailsScreen() {
         {/* Tab Content */}
         {renderTabContent()}
 
-        {/* FAQs Section */}
-        <View style={styles.faqsContainer}>
-          <Text style={styles.faqsTitle}>FAQs</Text>
-          {faqs.map((faq) => (
-            <TouchableOpacity
-              key={faq.id}
-              style={styles.faqItem}
-              onPress={() => toggleFAQ(faq.id)}
-            >
-              <View style={styles.faqHeader}>
-                <Text style={styles.faqQuestion}>{faq.question}</Text>
-                {faq.expanded ? (
-                  <ChevronUp size={20} color="#6B7280" />
-                ) : (
-                  <ChevronDown size={20} color="#6B7280" />
-                )}
-              </View>
-              {faq.expanded && (
-                <Text style={styles.faqAnswer}>{faq.answer}</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Policies Section */}
-        <View style={styles.policiesContainer}>
-          <Text style={styles.policiesTitle}>Policies and Agreement</Text>
-          <TouchableOpacity
-            style={styles.policyItem}
-            onPress={() => setIsAgreed(!isAgreed)}
-          >
-            <View style={[styles.checkbox, isAgreed && styles.checkboxChecked]}>
-              {isAgreed && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.policyText}>
-              I hereby agree to the terms and conditions of the Lease Agreement with Host.
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Bottom Spacing for Fixed Price Bar */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -631,15 +883,19 @@ export default function BikeDetailsScreen() {
       {/* Fixed Price Bar */}
       <View style={styles.priceBar}>
         <View style={styles.priceInfo}>
-          <Text style={styles.priceAmount}>₹540</Text>
-          <Text style={styles.priceBreakup}>Price Breakup</Text>
+          <Text style={styles.priceAmount}>₹{totalPrice.toFixed(0)}</Text>
+          <Text style={styles.priceBreakup}>for {duration}</Text>
           <View style={styles.priceFeatures}>
             <Text style={styles.priceFeature}>• Helmet</Text>
-            <Text style={styles.priceFeature}>• Automatic</Text>
+            <Text style={styles.priceFeature}>• {vehicleData?.transmission_type || 'Automatic'}</Text>
             <Text style={styles.priceFeature}>• Fuel</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
+        <TouchableOpacity 
+          style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]}
+          onPress={handleBookNow}
+          disabled={!isAgreed}
+        >
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>
@@ -781,11 +1037,11 @@ export default function BikeDetailsScreen() {
         </TouchableWithoutFeedback>
       </Modal>
       <SlideMenu
-                visible={showMenu}
-                onClose={closeMenu}
-                userData={userData}
-                setUserData={setUserData}
-              />
+        visible={showMenu}
+        onClose={closeMenu}
+        userData={userData}
+        setUserData={setUserData}
+      />
     </SafeAreaView>
     </ScreenWrapper>
   );
@@ -794,7 +1050,6 @@ export default function BikeDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 30,
     backgroundColor: '#F9FAFB',
   },
   header: {
@@ -824,6 +1079,29 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  loadingFullContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  noImageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+  },
+  noImageText: {
+    fontSize: 16,
+    color: '#6B7280',
   },
   tripDetails: {
     backgroundColor: '#FFFFFF',
@@ -959,8 +1237,22 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#FFFFFF',
   },
-  photosContainer: {
+  sectionContainer: {
     padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  activeSection: {
+    backgroundColor: '#F9FAFB',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  photosContainer: {
+    marginBottom: 16,
   },
   mainImageContainer: {
     position: 'relative',
@@ -1038,7 +1330,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   reviewsContainer: {
-    padding: 20,
+    marginBottom: 16,
   },
   ratingOverview: {
     marginBottom: 24,
@@ -1066,6 +1358,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
     marginBottom: 2,
+  },
+  noReviewsContainer: {
+    padding: 20,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  noReviewsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  noReviewsSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   reviewCard: {
     backgroundColor: '#F9FAFB',
@@ -1116,12 +1425,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   featuresContainer: {
-    padding: 20,
-  },
-  featuresTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 16,
   },
   featuresList: {
@@ -1143,12 +1446,6 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   locationContainer: {
-    padding: 20,
-  },
-  locationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 16,
   },
   locationCard: {
@@ -1176,12 +1473,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   offersContainer: {
-    padding: 20,
-  },
-  offersTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
     marginBottom: 16,
   },
   offerCard: {
@@ -1343,6 +1634,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  bookButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+  },
   bookButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -1435,7 +1730,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
-
   },
   locationEditContent: {
     padding: 20,
