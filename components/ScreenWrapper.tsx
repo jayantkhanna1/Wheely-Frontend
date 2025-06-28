@@ -19,8 +19,8 @@ export function ScreenWrapper({ children, showHackathonBadge = true }: ScreenWra
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      {showHackathonBadge && <HackathonBadge eventName="Wheely Hackathon 2025" link="https://hackathon.wheely.xyz" />}
       {children}
+      {showHackathonBadge && <HackathonBadge eventName="HACKATHON 2025" link="https://hackathon.wheely.xyz" />}
     </View>
   );
 }

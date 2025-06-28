@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Dimensions } from 'react-native';
 
 interface HackathonBadgeProps {
   eventName?: string;
   link?: string;
 }
+
+const { width } = Dimensions.get('window');
 
 export const HackathonBadge: React.FC<HackathonBadgeProps> = ({ 
   eventName = "Hackathon 2025", 
@@ -25,7 +27,6 @@ export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
       <View style={styles.badge}>
         <Text style={styles.text}>{eventName}</Text>
       </View>
-      <View style={styles.ribbon} />
     </TouchableOpacity>
   );
 };
@@ -33,20 +34,25 @@ export const HackathonBadge: React.FC<HackathonBadgeProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    zIndex: 999,
+    top: 10,
+    right: 10,
+    zIndex: 9999,
+    width: 120,
+    height: 120,
+    overflow: 'hidden',
   },
   badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
     backgroundColor: '#FF5722',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderBottomLeftRadius: 8,
-    transform: [{ rotate: '45deg' }, { translateX: 20 }, { translateY: -10 }],
+    paddingVertical: 5,
+    paddingHorizontal: 30,
+    transform: [{ rotate: '45deg' }, { translateX: 30 }, { translateY: -5 }],
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
     elevation: 5,
   },
   text: {
@@ -54,24 +60,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 10,
     textAlign: 'center',
-  },
-  ribbon: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 60,
-    height: 60,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderTopWidth: 0,
-    borderRightWidth: 60,
-    borderBottomWidth: 60,
-    borderLeftWidth: 0,
-    borderTopColor: 'transparent',
-    borderRightColor: '#FF5722',
-    borderBottomColor: 'transparent',
-    borderLeftColor: 'transparent',
-    transform: [{ rotate: '45deg' }, { translateX: 15 }, { translateY: -15 }],
-    zIndex: -1,
   }
 });
