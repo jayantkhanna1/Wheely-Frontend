@@ -100,13 +100,23 @@ export default function CycleDetailsScreen() {
   const [endPickerMode, setEndPickerMode] = useState<'date' | 'time'>('date');
   const [tempLocation, setTempLocation] = useState(location);
   const [showMenu, setShowMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState('Photos');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [vehicleData, setVehicleData] = useState<BackendVehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [cycleImages, setCycleImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Ref for scrolling to sections
+  const scrollViewRef = useRef<ScrollView>(null);
+  const sectionRefs = {
+    photos: useRef<View>(null),
+    reviews: useRef<View>(null),
+    features: useRef<View>(null),
+    location: useRef<View>(null),
+    offers: useRef<View>(null),
+    faqs: useRef<View>(null),
+  };
   
   useEffect(() => {
     loadUserData();
@@ -223,34 +233,8 @@ export default function CycleDetailsScreen() {
 
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
 
-  const reviews: Review[] = [
-    {
-      id: '1',
-      name: 'Ananya Vishnoi',
-      rating: 5,
-      comment: 'I cycled around 50+ kms over 3 days very satisfied with the performance and comfort. I recommend this cycle that an amazing experience, would love to go with this cycle again in future.',
-      date: '2 days ago',
-      avatar: 'AV'
-    },
-    {
-      id: '2',
-      name: 'Rahul Sharma',
-      rating: 5,
-      comment: 'Excellent cycle with amazing performance. The booking process was smooth and the cycle was in perfect condition.',
-      date: '1 week ago',
-      avatar: 'RS'
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      rating: 4,
-      comment: 'Great experience overall. The cycle was clean and well-maintained. Would definitely book again.',
-      date: '2 weeks ago',
-      avatar: 'PP'
-    }
-  ];
-
-  const tabs = ['Photos', 'Reviews', 'Features', 'Location', 'Offers'];
+  // Empty reviews state for the "no reviews" message
+  const [hasReviews, setHasReviews] = useState(false);
 
   const features = vehicleData?.features || [
     '21 Speed Gears',
@@ -467,148 +451,18 @@ export default function CycleDetailsScreen() {
     });
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Photos':
-        return (
-          <View style={styles.photosContainer}>
-            <View style={styles.mainImageContainer}>
-              {loading ? (
-                <View style={[styles.mainImage, styles.loadingContainer]}>
-                  <ActivityIndicator size="large" color="#059669" />
-                </View>
-              ) : (
-                <>
-                  <Image 
-                    source={{ uri: cycleImages[currentImageIndex] }} 
-                    style={styles.mainImage} 
-                  />
-                  <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
-                    <ChevronLeft size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
-                    <ChevronRight size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <View style={styles.imageCounter}>
-                    <Text style={styles.imageCounterText}>
-                      {currentImageIndex + 1} / {cycleImages.length}
-                    </Text>
-                  </View>
-                </>
-              )}
-            </View>
-            <View style={styles.thumbnailContainer}>
-              {cycleImages.map((image, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.thumbnail,
-                    index === currentImageIndex && styles.activeThumbnail
-                  ]}
-                  onPress={() => setCurrentImageIndex(index)}
-                >
-                  <Image source={{ uri: image }} style={styles.thumbnailImage} />
-                </TouchableOpacity>
-              ))}
-              {cycleImages.length > 5 && (
-                <View style={styles.morePhotos}>
-                  <Text style={styles.morePhotosText}>+{cycleImages.length - 5} more</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        );
-
-      case 'Reviews':
-        return (
-          <View style={styles.reviewsContainer}>
-            <View style={styles.ratingOverview}>
-              <Text style={styles.ratingTitle}>Reviews & Rating</Text>
-              <View style={styles.ratingHeader}>
-                <Text style={styles.ratingScore}>{vehicleData?.rating?.toFixed(1) || '4.8'}</Text>
-                <View style={styles.ratingStarsContainer}>
-                  <View style={styles.ratingStars}>
-                    {renderStars(vehicleData?.rating || 4.8)}
-                  </View>
-                  <Text style={styles.reviewCount}>10 Reviews</Text>
-                </View>
-              </View>
-            </View>
-            
-            {reviews.map((item) => (
-              <View key={item.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewerInfo}>
-                    <View style={styles.reviewerAvatar}>
-                      <Text style={styles.reviewerAvatarText}>{item.avatar}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.reviewerName}>{item.name}</Text>
-                      <Text style={styles.reviewDate}>{item.date}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.reviewRating}>
-                    {renderStars(item.rating)}
-                  </View>
-                </View>
-                <Text style={styles.reviewComment}>{item.comment}</Text>
-              </View>
-            ))}
-          </View>
-        );
-
-      case 'Features':
-        return (
-          <View style={styles.featuresContainer}>
-            <Text style={styles.featuresTitle}>Cycle Features</Text>
-            <View style={styles.featuresList}>
-              {features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <View style={styles.featureBullet} />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        );
-
-      case 'Location':
-        return (
-          <View style={styles.locationContainer}>
-            <Text style={styles.locationTitle}>Cycle Location</Text>
-            <View style={styles.locationCard}>
-              <View style={styles.locationIcon}>
-                <MapPin size={24} color="#059669" />
-              </View>
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationAddress}>
-                  {vehicleData?.location?.address || 'XUPH, MWC, Special Wing, Saket Colony, Delhi, 110046, India'}
-                </Text>
-                <Text style={styles.locationDistance}>1.2 km away</Text>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'Offers':
-        return (
-          <View style={styles.offersContainer}>
-            <Text style={styles.offersTitle}>Special Offers</Text>
-            <View style={styles.offerCard}>
-              <Text style={styles.offerTitle}>First Time User</Text>
-              <Text style={styles.offerDescription}>Get 20% off on your first booking</Text>
-              <Text style={styles.offerCode}>Use code: FIRST20</Text>
-            </View>
-            <View style={styles.offerCard}>
-              <Text style={styles.offerTitle}>Weekend Special</Text>
-              <Text style={styles.offerDescription}>15% off on weekend bookings</Text>
-              <Text style={styles.offerCode}>Use code: WEEKEND15</Text>
-            </View>
-          </View>
-        );
-
-      default:
-        return null;
+  // Function to scroll to a specific section
+  const scrollToSection = (sectionName: keyof typeof sectionRefs) => {
+    const sectionRef = sectionRefs[sectionName];
+    if (sectionRef.current && scrollViewRef.current) {
+      sectionRef.current.measureLayout(
+        // @ts-ignore - This is a valid method but TypeScript doesn't recognize it
+        scrollViewRef.current.getInnerViewNode(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+        },
+        () => console.log('Failed to measure layout')
+      );
     }
   };
 
@@ -630,7 +484,16 @@ export default function CycleDetailsScreen() {
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/cycle-selection')} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.push({
+            pathname: '/cycle-selection',
+            params: {
+              location: location,
+              tripStartDate: tripStartDate,
+              tripEndDate: tripEndDate,
+              tripStartTime: tripStartTime,
+              tripEndTime: tripEndTime
+            }
+          })} style={styles.backButton}>
             <ArrowLeft size={24} color="#000000" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
@@ -639,7 +502,11 @@ export default function CycleDetailsScreen() {
         </View>
 
         {/* Scrollable Content */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+        >
           {/* Trip Details - Editable */}
           <View style={styles.tripDetails}>
             <View style={styles.tripHeader}>
@@ -689,10 +556,6 @@ export default function CycleDetailsScreen() {
               <Text style={styles.cycleName}>
                 {vehicleData ? `${vehicleData.vehicle_brand} ${vehicleData.vehicle_model}` : 'Trek FX 3 Disc'}
               </Text>
-              <View style={styles.ratingContainer}>
-                {renderStars(vehicleData?.rating || 4.8)}
-                <Text style={styles.reviewCount}>10 Reviews</Text>
-              </View>
             </View>
             <Text style={styles.cycleFeatures}>
               {vehicleData ? 
@@ -705,26 +568,161 @@ export default function CycleDetailsScreen() {
           {/* Tabs */}
           <View style={styles.tabsContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {tabs.map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[styles.tab, activeTab === tab && styles.activeTab]}
-                  onPress={() => setActiveTab(tab)}
-                >
-                  <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                    {tab}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('photos')}
+              >
+                <Text style={styles.tabText}>Photos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('reviews')}
+              >
+                <Text style={styles.tabText}>Reviews</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('features')}
+              >
+                <Text style={styles.tabText}>Features</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('location')}
+              >
+                <Text style={styles.tabText}>Location</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tab}
+                onPress={() => scrollToSection('offers')}
+              >
+                <Text style={styles.tabText}>Offers</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
 
-          {/* Tab Content */}
-          {renderTabContent()}
+          {/* Photos Section */}
+          <View ref={sectionRefs.photos} style={styles.photosContainer}>
+            <Text style={styles.sectionTitle}>Photos</Text>
+            <View style={styles.mainImageContainer}>
+              {loading ? (
+                <View style={[styles.mainImage, styles.loadingContainer]}>
+                  <ActivityIndicator size="large" color="#059669" />
+                </View>
+              ) : (
+                <>
+                  <Image 
+                    source={{ uri: cycleImages[currentImageIndex] }} 
+                    style={styles.mainImage} 
+                  />
+                  <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
+                    <ChevronLeft size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
+                    <ChevronRight size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <View style={styles.imageCounter}>
+                    <Text style={styles.imageCounterText}>
+                      {currentImageIndex + 1} / {cycleImages.length}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+            <View style={styles.thumbnailContainer}>
+              {cycleImages.map((image, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.thumbnail,
+                    index === currentImageIndex && styles.activeThumbnail
+                  ]}
+                  onPress={() => setCurrentImageIndex(index)}
+                >
+                  <Image source={{ uri: image }} style={styles.thumbnailImage} />
+                </TouchableOpacity>
+              ))}
+              {cycleImages.length > 5 && (
+                <View style={styles.morePhotos}>
+                  <Text style={styles.morePhotosText}>+{cycleImages.length - 5} more</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Reviews Section */}
+          <View ref={sectionRefs.reviews} style={styles.reviewsContainer}>
+            <Text style={styles.sectionTitle}>Reviews & Rating</Text>
+            <View style={styles.ratingOverview}>
+              <View style={styles.ratingHeader}>
+                <Text style={styles.ratingScore}>{vehicleData?.rating?.toFixed(1) || '4.8'}</Text>
+                <View style={styles.ratingStarsContainer}>
+                  <View style={styles.ratingStars}>
+                    {renderStars(vehicleData?.rating || 4.8)}
+                  </View>
+                </View>
+              </View>
+            </View>
+            
+            {hasReviews ? (
+              <View>
+                {/* This would show actual reviews if we had them */}
+              </View>
+            ) : (
+              <View style={styles.noReviewsContainer}>
+                <Text style={styles.noReviewsText}>No reviews yet</Text>
+                <Text style={styles.noReviewsSubtext}>Be the first to review this bicycle after your trip!</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Features Section */}
+          <View ref={sectionRefs.features} style={styles.featuresContainer}>
+            <Text style={styles.sectionTitle}>Cycle Features</Text>
+            <View style={styles.featuresList}>
+              {features.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <View style={styles.featureBullet} />
+                  <Text style={styles.featureText}>{feature}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Location Section */}
+          <View ref={sectionRefs.location} style={styles.locationContainer}>
+            <Text style={styles.sectionTitle}>Cycle Location</Text>
+            <View style={styles.locationCard}>
+              <View style={styles.locationIcon}>
+                <MapPin size={24} color="#059669" />
+              </View>
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationAddress}>
+                  {vehicleData?.location?.address || 'XUPH, MWC, Special Wing, Saket Colony, Delhi, 110046, India'}
+                </Text>
+                <Text style={styles.locationDistance}>1.2 km away</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Offers Section */}
+          <View ref={sectionRefs.offers} style={styles.offersContainer}>
+            <Text style={styles.sectionTitle}>Special Offers</Text>
+            <View style={styles.offerCard}>
+              <Text style={styles.offerTitle}>First Time User</Text>
+              <Text style={styles.offerDescription}>Get 20% off on your first booking</Text>
+              <Text style={styles.offerCode}>Use code: FIRST20</Text>
+            </View>
+            <View style={styles.offerCard}>
+              <Text style={styles.offerTitle}>Weekend Special</Text>
+              <Text style={styles.offerDescription}>15% off on weekend bookings</Text>
+              <Text style={styles.offerCode}>Use code: WEEKEND15</Text>
+            </View>
+          </View>
 
           {/* FAQs Section */}
-          <View style={styles.faqsContainer}>
-            <Text style={styles.faqsTitle}>FAQs</Text>
+          <View ref={sectionRefs.faqs} style={styles.faqsContainer}>
+            <Text style={styles.sectionTitle}>FAQs</Text>
             {faqs.map((faq) => (
               <TouchableOpacity
                 key={faq.id}
@@ -748,7 +746,7 @@ export default function CycleDetailsScreen() {
 
           {/* Policies Section */}
           <View style={styles.policiesContainer}>
-            <Text style={styles.policiesTitle}>Policies and Agreement</Text>
+            <Text style={styles.sectionTitle}>Policies and Agreement</Text>
             <TouchableOpacity 
               style={styles.policyItem}
               onPress={() => setIsAgreed(!isAgreed)}
@@ -1087,18 +1085,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     marginHorizontal: 4,
-    borderRadius: 20,
-  },
-  activeTab: {
-    backgroundColor: '#059669',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#059669',
   },
-  activeTabText: {
-    color: '#FFFFFF',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
   },
   photosContainer: {
     padding: 20,
@@ -1180,15 +1177,11 @@ const styles = StyleSheet.create({
   },
   reviewsContainer: {
     padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   ratingOverview: {
     marginBottom: 24,
-  },
-  ratingTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 12,
   },
   ratingHeader: {
     flexDirection: 'row',
@@ -1208,62 +1201,27 @@ const styles = StyleSheet.create({
     gap: 2,
     marginBottom: 2,
   },
-  reviewCard: {
+  noReviewsContainer: {
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  reviewerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  reviewerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#059669',
-    justifyContent: 'center',
+    padding: 20,
     alignItems: 'center',
   },
-  reviewerAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  reviewerName: {
+  noReviewsText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
-  },
-  reviewDate: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  reviewRating: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  reviewComment: {
-    fontSize: 14,
     color: '#374151',
-    lineHeight: 20,
+    marginBottom: 8,
+  },
+  noReviewsSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   featuresContainer: {
     padding: 20,
-  },
-  featuresTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   featuresList: {
     gap: 12,
@@ -1285,12 +1243,8 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     padding: 20,
-  },
-  locationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   locationCard: {
     flexDirection: 'row',
@@ -1318,12 +1272,8 @@ const styles = StyleSheet.create({
   },
   offersContainer: {
     padding: 20,
-  },
-  offersTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   offerCard: {
     backgroundColor: '#F0FDF4',
@@ -1352,13 +1302,7 @@ const styles = StyleSheet.create({
   faqsContainer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  faqsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
+    borderTopColor: '#F3F4F6',
   },
   faqItem: {
     borderBottomWidth: 1,
@@ -1387,12 +1331,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-  },
-  policiesTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
   },
   policyItem: {
     flexDirection: 'row',

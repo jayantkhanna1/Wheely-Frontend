@@ -1,6 +1,6 @@
 // components/Step3PricingLocation.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, FlatList, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { StepProps } from '../types/VehicleTypes';
 
@@ -83,146 +83,154 @@ const Step3PricingLocation: React.FC<StepProps> = ({ formData, updateFormData })
   };
 
   return (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Pricing & Location</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={100}
+    >
+      <ScrollView style={styles.container}>
+        <View style={styles.stepContent}>
+          <Text style={styles.stepTitle}>Pricing & Location</Text>
 
-      <View style={styles.row}>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Price per Day (₹) *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="1500"
-            value={formData.pricePerDay}
-            onChangeText={(text) => updateFormData('pricePerDay', text)}
-            keyboardType="numeric"
-          />
-        </View>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Price per Hour (₹) *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="200"
-            value={formData.pricePerHour}
-            onChangeText={(text) => updateFormData('pricePerHour', text)}
-            keyboardType="numeric"
-          />
-        </View>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Address *</Text>
-        <View style={styles.locationContainer}>
-          <View style={styles.mapPinContainer}>
-            <MapPin size={18} color="#059669" />
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Price per Day (₹) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="1500"
+                value={formData.pricePerDay}
+                onChangeText={(text) => updateFormData('pricePerDay', text)}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Price per Hour (₹) *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="200"
+                value={formData.pricePerHour}
+                onChangeText={(text) => updateFormData('pricePerHour', text)}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
-          <TextInput
-            style={styles.locationInput}
-            placeholder="Enter your complete address"
-            value={formData.address}
-            onChangeText={(text) => updateFormData('address', text)}
-            multiline
-            numberOfLines={2}
-          />
-        </View>
-      </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Street</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Street name"
-          value={formData.street}
-          onChangeText={(text) => updateFormData('street', text)}
-        />
-      </View>
-
-      <View style={styles.row}>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>City *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="City"
-            value={formData.city}
-            onChangeText={handleCityChange}
-          />
-          {showCitySuggestions && (
-            <View style={styles.suggestionsContainer}>
-              <FlatList
-                data={citySuggestions}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={styles.suggestionItem}
-                    onPress={() => selectCity(item.text)}
-                  >
-                    <Text style={styles.suggestionText}>{item.text}</Text>
-                  </TouchableOpacity>
-                )}
-                style={styles.suggestionsList}
-                nestedScrollEnabled
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Address *</Text>
+            <View style={styles.locationContainer}>
+              <View style={styles.mapPinContainer}>
+                <MapPin size={18} color="#059669" />
+              </View>
+              <TextInput
+                style={styles.locationInput}
+                placeholder="Enter your complete address"
+                value={formData.address}
+                onChangeText={(text) => updateFormData('address', text)}
+                multiline
+                numberOfLines={2}
               />
             </View>
-          )}
-        </View>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>State *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="State"
-            value={formData.state}
-            onChangeText={handleStateChange}
-          />
-          {showStateSuggestions && (
-            <View style={styles.suggestionsContainer}>
-              <FlatList
-                data={stateSuggestions}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={styles.suggestionItem}
-                    onPress={() => selectState(item.text)}
-                  >
-                    <Text style={styles.suggestionText}>{item.text}</Text>
-                  </TouchableOpacity>
-                )}
-                style={styles.suggestionsList}
-                nestedScrollEnabled
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Street</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Street name"
+              value={formData.street}
+              onChangeText={(text) => updateFormData('street', text)}
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>City *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="City"
+                value={formData.city}
+                onChangeText={handleCityChange}
+              />
+              {showCitySuggestions && (
+                <View style={styles.suggestionsContainer}>
+                  <FlatList
+                    data={citySuggestions}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity 
+                        style={styles.suggestionItem}
+                        onPress={() => selectCity(item.text)}
+                      >
+                        <Text style={styles.suggestionText}>{item.text}</Text>
+                      </TouchableOpacity>
+                    )}
+                    style={styles.suggestionsList}
+                    nestedScrollEnabled
+                  />
+                </View>
+              )}
+            </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>State *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="State"
+                value={formData.state}
+                onChangeText={handleStateChange}
+              />
+              {showStateSuggestions && (
+                <View style={styles.suggestionsContainer}>
+                  <FlatList
+                    data={stateSuggestions}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity 
+                        style={styles.suggestionItem}
+                        onPress={() => selectState(item.text)}
+                      >
+                        <Text style={styles.suggestionText}>{item.text}</Text>
+                      </TouchableOpacity>
+                    )}
+                    style={styles.suggestionsList}
+                    nestedScrollEnabled
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Pincode *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Pincode"
+                value={formData.pincode}
+                onChangeText={(text) => updateFormData('pincode', text)}
               />
             </View>
-          )}
-        </View>
-      </View>
-      <View style={styles.row}>
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Pincode *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Pincode"
-            value={formData.pincode}
-            onChangeText={(text) => updateFormData('pincode', text)}
-          />
-        </View>
 
-        <View style={styles.halfInput}>
-          <Text style={styles.label}>Country *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Country"
-            value={formData.country}
-            onChangeText={(text) => updateFormData('country', text)}
-          />
-        </View>
-      </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Country *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Country"
+                value={formData.country}
+                onChangeText={(text) => updateFormData('country', text)}
+              />
+            </View>
+          </View>
 
-      <View style={styles.pricingTip}>
-        <Text style={styles.tipTitle}>💡 Pricing Tips</Text>
-        <Text style={styles.tipText}>
-          • Research similar vehicles in your area{'\n'}
-          • Consider fuel costs and maintenance{'\n'}
-          • Competitive pricing gets more bookings
-        </Text>
-      </View>
-    </View>
+          <View style={styles.pricingTip}>
+            <Text style={styles.tipTitle}>💡 Pricing Tips</Text>
+            <Text style={styles.tipText}>
+              • Research similar vehicles in your area{'\n'}
+              • Consider fuel costs and maintenance{'\n'}
+              • Competitive pricing gets more bookings
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -230,51 +238,6 @@ export default Step3PricingLocation;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 36,
-  },
-  progressContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#059669',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  content: {
     flex: 1,
   },
   stepContent: {
