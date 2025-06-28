@@ -11,10 +11,12 @@ import {
   Animated,
   Dimensions,
   TextInput,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { ArrowLeft, MapPin, Calendar, Clock, Star, Share2, X, ChevronDown, ChevronUp, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, CreditCard as Edit3, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -56,10 +58,87 @@ interface FAQ {
   expanded: boolean;
 }
 
+interface VehicleDetails {
+  id: number;
+  vehicle_name: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_color: string;
+  vehicle_year: number;
+  vehicle_type: string;
+  transmission_type: string;
+  fuel_type: string;
+  seating_capacity: number;
+  price_per_hour: string;
+  price_per_day: string;
+  location: {
+    id: number;
+    address: string;
+    street: string;
+    colony: string;
+    road: string;
+    pincode: string;
+    city: string;
+    state: string;
+    country: string;
+    google_map_location: string;
+    created_at: string;
+    updated_at: string;
+  };
+  owner: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+    location: any;
+    driving_license: any;
+    driving_license_verified: boolean;
+    profile_picture: string | null;
+    date_of_birth: string;
+    email_verified: boolean;
+    phone_verified: boolean;
+    private_token: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+  };
+  vehicle_rc: string | null;
+  vehicle_insurance: string | null;
+  vehicle_pollution_certificate: string | null;
+  is_available: boolean;
+  is_verified: boolean;
+  rating: number;
+  total_bookings: number;
+  photos: {
+    id: number;
+    photo: string;
+    is_primary: boolean;
+    created_at: string;
+  }[];
+  availability_slots: {
+    id: number;
+    start_date: string;
+    end_date: string;
+    start_time: string;
+    end_time: string;
+    is_available: boolean;
+    created_at: string;
+    updated_at: string;
+    vehicle: number;
+  }[];
+  created_at: string;
+  updated_at: string;
+  category: string;
+  features: string[];
+  license_plate: string | null;
+}
+
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function CarDetailsScreen() {
-  const [location, setLocation] = useState('Saket Colony, Delhi');
+  const { vehicleId } = useLocalSearchParams();
+  const [location, setLocation] = useState('');
   const [tripStart, setTripStart] = useState(new Date());
   const [tripEnd, setTripEnd] = useState(new Date(Date.now() + 12 * 60 * 60 * 1000));
   const [showLocationEdit, setShowLocationEdit] = useState(false);
@@ -73,10 +152,14 @@ export default function CarDetailsScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAgreed, setIsAgreed] = useState(false); // Changed to false (unticked by default)
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [vehicleData, setVehicleData] = useState<VehicleDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserData();
-  }, []);
+    fetchVehicleDetails();
+  }, [vehicleId]);
 
   const loadUserData = async () => {
     try {
@@ -92,6 +175,51 @@ export default function CarDetailsScreen() {
       console.error('Error loading user data:', error);
     }
   };
+
+  const fetchVehicleDetails = async () => {
+    if (!vehicleId) {
+      setError('No vehicle ID provided');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicle/${vehicleId}/`;
+      console.log('Fetching vehicle details from:', apiURL);
+
+      const response = await fetch(apiURL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Vehicle details response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Vehicle details data:', data);
+        setVehicleData(data);
+        
+        // Set location from vehicle data
+        if (data.location && data.location.address) {
+          setLocation(data.location.address);
+          setTempLocation(data.location.address);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Response:', errorData);
+        setError(errorData.message || `Failed to fetch vehicle details. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle details:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [faqs, setFaqs] = useState<FAQ[]>([
     {
       id: '1',
@@ -132,107 +260,6 @@ export default function CarDetailsScreen() {
   ]);
 
   const menuSlideAnim = useRef(new Animated.Value(screenWidth)).current;
-
-  const carImages = [
-    'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/3764984/pexels-photo-3764984.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/3729464/pexels-photo-3729464.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop',
-    'https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-  ];
-
-  const reviews: Review[] = [
-    {
-      id: '1',
-      name: 'Ananya Vishnoi',
-      rating: 5,
-      comment: 'I drove this car around 1500+ kms over 3 days very satisfied with the performance and speed. I recommend this car that an amazing experience, would love to go with this car again in future.',
-      date: '2 days ago',
-      avatar: 'AV'
-    },
-    {
-      id: '2',
-      name: 'Rahul Sharma',
-      rating: 5,
-      comment: 'Excellent car with amazing performance. The booking process was smooth and the car was in perfect condition.',
-      date: '1 week ago',
-      avatar: 'RS'
-    },
-    {
-      id: '3',
-      name: 'Priya Patel',
-      rating: 4,
-      comment: 'Great experience overall. The car was clean and well-maintained. Would definitely book again.',
-      date: '2 weeks ago',
-      avatar: 'PP'
-    }
-  ];
-
-  const tabs = ['Photos', 'Reviews', 'Features', 'Location', 'Offers'];
-
-  const features = [
-    'Automatic Transmission',
-    'Petrol Engine',
-    'Air Conditioning',
-    'Power Steering',
-    'ABS Brakes',
-    'Airbags',
-    'GPS Navigation',
-    'Bluetooth Connectivity',
-    'USB Charging Ports',
-    'Premium Sound System'
-  ];
-
-  const menuItems: MenuItem[] = [
-    {
-      id: 'trips',
-      title: 'My Trips',
-      icon: <MapIcon size={24} color="#374151" />,
-      onPress: () => console.log('My Trips pressed')
-    },
-    {
-      id: 'contact',
-      title: 'Contact Us',
-      icon: <Phone size={24} color="#374151" />,
-      onPress: () => console.log('Contact Us pressed')
-    },
-    {
-      id: 'profile',
-      title: 'My Profile',
-      icon: <User size={24} color="#374151" />,
-      onPress: () => console.log('My Profile pressed')
-    },
-    {
-      id: 'rewards',
-      title: 'Rewards',
-      icon: <Gift size={24} color="#374151" />,
-      onPress: () => console.log('Rewards pressed')
-    },
-    {
-      id: 'offers',
-      title: 'Offers',
-      icon: <Percent size={24} color="#374151" />,
-      onPress: () => console.log('Offers pressed')
-    },
-    {
-      id: 'helpline',
-      title: 'Helpline Support',
-      icon: <HelpCircle size={24} color="#374151" />,
-      onPress: () => console.log('Helpline Support pressed')
-    },
-    {
-      id: 'policies',
-      title: 'Policies',
-      icon: <FileText size={24} color="#374151" />,
-      onPress: () => console.log('Policies pressed')
-    },
-    {
-      id: 'language',
-      title: 'Language',
-      icon: <Globe size={24} color="#374151" />,
-      onPress: () => console.log('Language pressed')
-    }
-  ];
 
   const formatDateTime = (date: Date, type: 'date' | 'time') => {
     if (type === 'date') {
@@ -325,11 +352,6 @@ export default function CarDetailsScreen() {
     }
   };
 
-  const handleMenuItemPress = (item: MenuItem) => {
-    item.onPress();
-    closeMenu();
-  };
-
   const toggleFAQ = (faqId: string) => {
     setFaqs(prev => prev.map(faq =>
       faq.id === faqId
@@ -339,11 +361,15 @@ export default function CarDetailsScreen() {
   };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % carImages.length);
+    if (vehicleData?.photos && vehicleData.photos.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % vehicleData.photos.length);
+    }
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + carImages.length) % carImages.length);
+    if (vehicleData?.photos && vehicleData.photos.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + vehicleData.photos.length) % vehicleData.photos.length);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -358,39 +384,128 @@ export default function CarDetailsScreen() {
   };
 
   const handleBookNow = () => {
+    if (!vehicleData) {
+      Alert.alert('Error', 'Vehicle data not available');
+      return;
+    }
+
     router.push({
       pathname: '/payment',
       params: {
         vehicleType: 'car',
-        vehicleName: 'Lamborghini 2020',
-        price: '20010',
+        vehicleName: vehicleData.vehicle_name,
+        price: vehicleData.price_per_hour,
         duration: '12 hours',
-        pickupLocation: '8XM9+MwC, Special Wing, Prem Nagar...'
+        pickupLocation: vehicleData.location?.address || 'Location not available'
       }
     });
   };
 
+  const getVehicleFeatures = () => {
+    if (!vehicleData) return [];
+    
+    const features = [...(vehicleData.features || [])];
+    
+    // Add standard features if not already included
+    if (vehicleData.transmission_type && !features.includes(vehicleData.transmission_type)) {
+      features.push(vehicleData.transmission_type);
+    }
+    
+    if (vehicleData.fuel_type && !features.includes(vehicleData.fuel_type)) {
+      features.push(vehicleData.fuel_type.charAt(0).toUpperCase() + vehicleData.fuel_type.slice(1));
+    }
+    
+    if (vehicleData.seating_capacity && !features.includes(`${vehicleData.seating_capacity} Seats`)) {
+      features.push(`${vehicleData.seating_capacity} Seats`);
+    }
+    
+    // Add some default features if the list is too short
+    if (features.length < 5) {
+      const defaultFeatures = [
+        'Air Conditioning',
+        'Power Steering',
+        'ABS Brakes',
+        'Airbags',
+        'GPS Navigation',
+        'Bluetooth Connectivity',
+        'USB Charging Ports',
+        'Premium Sound System'
+      ];
+      
+      for (const feature of defaultFeatures) {
+        if (!features.includes(feature) && features.length < 10) {
+          features.push(feature);
+        }
+      }
+    }
+    
+    return features;
+  };
+
   const renderTabContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#059669" />
+          <Text style={styles.loadingText}>Loading vehicle details...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchVehicleDetails}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (!vehicleData) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Vehicle data not available</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+            <Text style={styles.retryButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     switch (activeTab) {
       case 'Photos':
         return (
           <View style={styles.photosContainer}>
             <View style={styles.mainImageContainer}>
-              <Image source={{ uri: carImages[currentImageIndex] }} style={styles.mainImage} />
+              {vehicleData.photos && vehicleData.photos.length > 0 ? (
+                <Image 
+                  source={{ uri: vehicleData.photos[currentImageIndex].photo }} 
+                  style={styles.mainImage} 
+                />
+              ) : (
+                <Image 
+                  source={{ uri: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop' }} 
+                  style={styles.mainImage} 
+                />
+              )}
               <TouchableOpacity style={styles.prevButton} onPress={prevImage}>
                 <ChevronLeft size={24} color="#FFFFFF" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
                 <ChevronRight size={24} color="#FFFFFF" />
               </TouchableOpacity>
-              <View style={styles.imageCounter}>
-                <Text style={styles.imageCounterText}>
-                  {currentImageIndex + 1} / {carImages.length}
-                </Text>
-              </View>
+              {vehicleData.photos && vehicleData.photos.length > 0 && (
+                <View style={styles.imageCounter}>
+                  <Text style={styles.imageCounterText}>
+                    {currentImageIndex + 1} / {vehicleData.photos.length}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.thumbnailContainer}>
-              {carImages.map((image, index) => (
+              {vehicleData.photos && vehicleData.photos.map((photo, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[
@@ -399,12 +514,14 @@ export default function CarDetailsScreen() {
                   ]}
                   onPress={() => setCurrentImageIndex(index)}
                 >
-                  <Image source={{ uri: image }} style={styles.thumbnailImage} />
+                  <Image source={{ uri: photo.photo }} style={styles.thumbnailImage} />
                 </TouchableOpacity>
               ))}
-              <View style={styles.morePhotos}>
-                <Text style={styles.morePhotosText}>+5 more</Text>
-              </View>
+              {vehicleData.photos && vehicleData.photos.length > 4 && (
+                <View style={styles.morePhotos}>
+                  <Text style={styles.morePhotosText}>+{vehicleData.photos.length - 4} more</Text>
+                </View>
+              )}
             </View>
           </View>
         );
@@ -415,12 +532,12 @@ export default function CarDetailsScreen() {
             <View style={styles.ratingOverview}>
               <Text style={styles.ratingTitle}>Reviews & Rating</Text>
               <View style={styles.ratingHeader}>
-                <Text style={styles.ratingScore}>5.0</Text>
+                <Text style={styles.ratingScore}>{vehicleData.rating.toFixed(1)}</Text>
                 <View style={styles.ratingStarsContainer}>
                   <View style={styles.ratingStars}>
-                    {renderStars(5)}
+                    {renderStars(Math.round(vehicleData.rating))}
                   </View>
-                  <Text style={styles.reviewCount}>10 Reviews</Text>
+                  <Text style={styles.reviewCount}>{vehicleData.total_bookings} Reviews</Text>
                 </View>
               </View>
             </View>
@@ -452,7 +569,7 @@ export default function CarDetailsScreen() {
           <View style={styles.featuresContainer}>
             <Text style={styles.featuresTitle}>Car Features</Text>
             <View style={styles.featuresList}>
-              {features.map((feature, index) => (
+              {getVehicleFeatures().map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
                   <View style={styles.featureBullet} />
                   <Text style={styles.featureText}>{feature}</Text>
@@ -472,9 +589,11 @@ export default function CarDetailsScreen() {
               </View>
               <View style={styles.locationInfo}>
                 <Text style={styles.locationAddress}>
-                  XUPH, MWC, Special Wing, Saket Colony, Delhi, 110046, India
+                  {vehicleData.location?.address || 'Address not available'}
                 </Text>
-                <Text style={styles.locationDistance}>2.1 km away</Text>
+                <Text style={styles.locationDistance}>
+                  {vehicleData.location?.city}, {vehicleData.location?.state}, {vehicleData.location?.pincode}
+                </Text>
               </View>
             </View>
           </View>
@@ -511,7 +630,7 @@ export default function CarDetailsScreen() {
           <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.profileIcon} onPress={openMenu}>
-          <Text style={styles.profileText}>{userData?.first_name[0]}{userData?.last_name[0]}</Text>
+          <Text style={styles.profileText}>{userData?.first_name?.[0]}{userData?.last_name?.[0]}</Text>
         </TouchableOpacity>
       </View>
 
@@ -521,7 +640,7 @@ export default function CarDetailsScreen() {
         <View style={styles.tripDetails}>
           <View style={styles.tripHeader}>
             <View>
-              <Text style={styles.carTitle}>Lamborghini 2020</Text>
+              <Text style={styles.carTitle}>{vehicleData?.vehicle_name || 'Loading...'}</Text>
               <Text style={styles.carLocation}>{location}</Text>
             </View>
             <TouchableOpacity style={styles.shareButton}>
@@ -553,20 +672,24 @@ export default function CarDetailsScreen() {
         {/* Car Info */}
         <View style={styles.carInfo}>
           <View style={styles.carHeader}>
-            <Text style={styles.carName}>Lamborghini 2020</Text>
+            <Text style={styles.carName}>{vehicleData?.vehicle_name || 'Loading...'}</Text>
             <View style={styles.ratingContainer}>
-              {renderStars(5)}
-              <Text style={styles.reviewCount}>10 Reviews</Text>
+              {renderStars(vehicleData?.rating || 0)}
+              <Text style={styles.reviewCount}>{vehicleData?.total_bookings || 0} Reviews</Text>
             </View>
           </View>
-          <Text style={styles.carFeatures}>Automatic • Petrol • 2 Seats</Text>
+          <Text style={styles.carFeatures}>
+            {vehicleData?.transmission_type || 'Automatic'} • 
+            {vehicleData?.fuel_type ? ` ${vehicleData.fuel_type.charAt(0).toUpperCase() + vehicleData.fuel_type.slice(1)}` : ' Petrol'} • 
+            {vehicleData?.seating_capacity ? ` ${vehicleData.seating_capacity} Seats` : ' 5 Seats'}
+          </Text>
           <Text style={styles.carUrl}>https://maps.google.com/25716420/details/712681</Text>
         </View>
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {tabs.map((tab) => (
+            {['Photos', 'Reviews', 'Features', 'Location', 'Offers'].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 style={[styles.tab, activeTab === tab && styles.activeTab]}
@@ -630,15 +753,19 @@ export default function CarDetailsScreen() {
       {/* Fixed Price Bar */}
       <View style={styles.priceBar}>
         <View style={styles.priceInfo}>
-          <Text style={styles.priceAmount}>₹20,010</Text>
+          <Text style={styles.priceAmount}>₹{vehicleData?.price_per_hour || '0'}</Text>
           <Text style={styles.priceBreakup}>Price Breakup</Text>
           <View style={styles.priceFeatures}>
             <Text style={styles.priceFeature}>• Toolkit</Text>
-            <Text style={styles.priceFeature}>• Automatic</Text>
+            <Text style={styles.priceFeature}>• {vehicleData?.transmission_type || 'Automatic'}</Text>
             <Text style={styles.priceFeature}>• Headlights</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
+        <TouchableOpacity 
+          style={[styles.bookButton, !isAgreed && styles.bookButtonDisabled]}
+          onPress={handleBookNow}
+          disabled={!isAgreed}
+        >
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>
@@ -1342,6 +1469,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  bookButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+  },
   bookButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -1550,5 +1681,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#374151',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

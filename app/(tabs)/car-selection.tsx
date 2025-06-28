@@ -11,7 +11,8 @@ import {
   Animated,
   Dimensions,
   Alert,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  ScrollView
 } from 'react-native';
 import { ArrowLeft, MapPin, ArrowUpDown, Star, X, CreditCard as Edit3, Filter } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -640,7 +641,10 @@ export default function CarSelectionScreen() {
   };
 
   const handleCarPress = (car: Car) => {
-    router.push('/car-details');
+    router.push({
+      pathname: '/car-details',
+      params: { vehicleId: car.id }
+    });
   };
 
   const renderFilterOption = ({ item }: { item: FilterOption }) => (
@@ -671,8 +675,7 @@ export default function CarSelectionScreen() {
   return (
     <ScreenWrapper>
       <SafeAreaView style={styles.container}>
-        {/* Main content container */}
-        <View style={styles.mainContent}>
+        <ScrollView>
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -747,17 +750,19 @@ export default function CarSelectionScreen() {
           </View>
 
           {/* Car List */}
-          <FlatList
-            data={cars}
-            renderItem={renderCarCard}
-            keyExtractor={(item) => item.id}
-            style={styles.carList}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.carListContent}
-          />
-        </View>
+          {cars.length > 0 ? (
+            <View style={styles.carListContainer}>
+              {cars.map((car) => renderCarCard({ item: car }))}
+            </View>
+          ) : (
+            <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>No cars found for your search criteria.</Text>
+              <Text style={styles.noResultsSubtext}>Try adjusting your filters or search parameters.</Text>
+            </View>
+          )}
+        </ScrollView>
 
-        {/* Filters Modal - Scrollable */}
+        {/* Filters Modal */}
         <Modal
           visible={showFilters}
           transparent={true}
@@ -799,7 +804,7 @@ export default function CarSelectionScreen() {
           </TouchableWithoutFeedback>
         </Modal>
 
-        {/* Sort Modal - Scrollable */}
+        {/* Sort Modal */}
         <Modal
           visible={showSort}
           transparent={true}
@@ -850,9 +855,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-  },
-  mainContent: {
-    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -1031,10 +1033,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#059669',
   },
-  carList: {
-    flex: 1,
-  },
-  carListContent: {
+  carListContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -1123,6 +1122,23 @@ const styles = StyleSheet.create({
   carPriceDetail: {
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  noResultsContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noResultsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   pickerOverlay: {
     position: 'absolute',
