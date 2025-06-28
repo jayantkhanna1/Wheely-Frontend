@@ -145,7 +145,7 @@ export default function CycleDetailsScreen() {
     }
 
     try {
-      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/vehicle/${vehicleId}/`;
+      const apiURL = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/search/vehicle/${vehicleId}/`;
       console.log('Fetching vehicle details from:', apiURL);
 
       const response = await fetch(apiURL, {
