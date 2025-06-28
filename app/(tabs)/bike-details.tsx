@@ -259,7 +259,7 @@ export default function BikeDetailsScreen() {
     {
       id: '3',
       question: 'What happens if the bike breaks down?',
-      answer: 'In case of a breakdown, call our 24/7 roadside assistance. We'll either fix the issue or provide a replacement bike as soon as possible.',
+      answer: 'In case of a breakdown, call our 24/7 roadside assistance. We\'ll either fix the issue or provide a replacement bike as soon as possible.',
       expanded: false
     },
     {
