@@ -359,7 +359,7 @@ export default function BikeDetailsScreen() {
     {
       id: '5',
       question: 'What if the bike breaks down during my rental period?',
-      answer: 'Call our 24/7 roadside assistance number provided in your booking confirmation. We'll either fix the issue or provide a replacement bike as soon as possible.',
+      answer: 'Call our 24/7 roadside assistance number provided in your booking confirmation. We\'ll either fix the issue or provide a replacement bike as soon as possible.',
       expanded: false
     },
     {
