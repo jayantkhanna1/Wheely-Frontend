@@ -13,160 +13,78 @@ A modern ride-sharing mobile application built with React Native and Expo, featu
 - **Responsive Design**: Optimized for both iOS and Android
 - **Production Ready**: Clean architecture with proper error handling
 - **Modern UI**: Beautiful, intuitive interface with attention to detail
+- **Offline Support**: Basic functionality works without internet connection
 
-## 📱 Screenshots
-
-The app includes four main screens:
-1. **Welcome Screen**: Green-themed landing page with app branding
-2. **Create Account**: Multiple sign-up options with social providers
-3. **Registration Form**: Complete form with real-time validation
-4. **Email Verification**: OTP verification with 5-digit code input
-
-## 🛠 Tech Stack
-
-- **Framework**: React Native with Expo SDK 52
-- **Navigation**: Expo Router 4.0
-- **Language**: TypeScript
-- **Styling**: React Native StyleSheet
-- **Icons**: Lucide React Native
-- **State Management**: React Hooks
-- **HTTP Client**: Fetch API
-
-## 🏗 Project Structure
-
-```
-app/
-├── _layout.tsx              # Root layout with navigation setup
-├── index.tsx                # Welcome/landing screen
-├── create-account.tsx       # Account creation options
-├── register.tsx             # Registration form with validation
-├── verify-email.tsx         # OTP verification screen
-└── (tabs)/
-    ├── _layout.tsx          # Tab navigation layout
-    └── index.tsx            # Home screen (post-authentication)
-
-components/
-└── Toast.tsx                # Reusable toast notification component
-
-hooks/
-└── useFrameworkReady.ts     # Framework initialization hook
-
-types/
-└── env.d.ts                 # Environment variable type definitions
-```
-
-## 🚀 Getting Started
+## 📱 Building the APK
 
 ### Prerequisites
 
 - Node.js (v16 or higher)
 - npm or yarn
 - Expo CLI
-- iOS Simulator or Android Emulator (optional)
+- EAS CLI
 
-### Installation
+### Building with EAS Build
 
-1. Clone the repository:
+1. Install EAS CLI:
 ```bash
-git clone https://github.com/YOUR_USERNAME/wheely-app.git
-cd wheely-app
+npm install -g eas-cli
 ```
 
-2. Install dependencies:
+2. Log in to your Expo account:
+```bash
+eas login
+```
+
+3. Configure your project for building:
+```bash
+eas build:configure
+```
+
+4. Build the APK:
+```bash
+eas build -p android --profile preview
+```
+
+5. Once the build is complete, you can download the APK from the Expo website or using the provided link.
+
+### Building Locally (Alternative)
+
+If you prefer to build locally:
+
+1. Install the required dependencies:
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+2. Create a development build:
 ```bash
-cp .env.example .env
-```
-Edit `.env` and add your API base URL:
-```
-EXPO_PUBLIC_API_BASE_URL=http://your-api-url-here
+npx expo prebuild -p android
 ```
 
-4. Start the development server:
+3. Build the APK:
 ```bash
-npm run dev
+cd android
+./gradlew assembleDebug
 ```
 
-5. Open the app:
-   - Scan the QR code with Expo Go app on your phone
-   - Press `i` for iOS simulator
-   - Press `a` for Android emulator
-   - Press `w` to open in web browser
+4. The APK will be available at `android/app/build/outputs/apk/debug/app-debug.apk`
 
-## 🔧 API Integration
+## 🔧 API Configuration
 
-The app integrates with a backend API for user authentication:
+The app is configured to connect to the API at the URL specified in the `.env` file:
 
-### Registration Endpoint
 ```
-POST /api/user/register/
-```
-**Request Body:**
-```json
-{
-  "first_name": "John",
-  "last_name": "Doe",
-  "email": "john.doe@example.com",
-  "password": "SecurePass123!",
-  "date_of_birth": "1990-05-15"
-}
+EXPO_PUBLIC_API_BASE_URL=http://43.206.193.125
 ```
 
-### Email Verification Endpoint
-```
-POST /api/user/verifyEmail/
-```
-**Request Body:**
-```json
-{
-  "email": "john.doe@example.com",
-  "otp": 12345
-}
-```
+## 📱 Offline Support
 
-## 🎨 Design Features
-
-- **Modern UI/UX**: Clean, intuitive interface following mobile design best practices
-- **Consistent Branding**: Green color scheme (#059669) throughout the app
-- **Responsive Layout**: Adapts to different screen sizes and orientations
-- **Smooth Animations**: Subtle transitions and micro-interactions
-- **Accessibility**: Proper contrast ratios and touch targets
-
-## 🔐 Security Features
-
-- **Password Validation**: Enforces strong password requirements
-  - Minimum 8 characters
-  - At least one uppercase letter
-  - At least one lowercase letter
-  - At least one number
-  - At least one special character
-- **Environment Variables**: Sensitive data stored securely
-- **Input Validation**: Client-side and server-side validation
-- **Error Handling**: Graceful error handling with user-friendly messages
-
-## 📝 Development Guidelines
-
-- **Code Style**: Consistent formatting with Prettier
-- **TypeScript**: Full type safety throughout the application
-- **Component Architecture**: Reusable, modular components
-- **Error Boundaries**: Proper error handling and user feedback
-- **Performance**: Optimized for smooth user experience
-
-## 🚀 Deployment
-
-### Web Deployment
-```bash
-npm run build:web
-```
-
-### Mobile App Store Deployment
-1. Configure app.json for production
-2. Build with EAS Build
-3. Submit to App Store/Google Play
+The app includes basic offline support:
+- Network connection detection
+- Graceful handling of API failures
+- Local data caching for critical features
+- Retry mechanisms for failed requests
 
 ## 🤝 Contributing
 
@@ -178,18 +96,7 @@ npm run build:web
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Expo team for the amazing development platform
-- React Native community for continuous improvements
-- Lucide for beautiful icons
-- Pexels for high-quality stock images
-
-## 📞 Support
-
-For support, email support@wheely-app.com or create an issue in this repository.
+This project is licensed under the MIT License.
 
 ---
 
