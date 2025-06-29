@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback, FlatList, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Animated, Dimensions, Modal, TouchableWithoutFeedback, FlatList, KeyboardAvoidingView, Platform, Keyboard, Alert } from 'react-native';
 import { Search, MapPin, Mic, Calendar, Clock, Bike, X, User, Map as MapIcon, Phone, Gift, Percent, CircleHelp as HelpCircle, FileText, Globe, ChevronDown, ChevronUp } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
@@ -56,6 +56,7 @@ export default function HomeScreen() {
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
     loadUserData();
@@ -69,10 +70,57 @@ export default function HomeScreen() {
       }
     );
     
+    // Check network connection
+    checkNetworkConnection();
+    
     return () => {
       keyboardDidShowListener.remove();
     };
   }, []);
+
+  const checkNetworkConnection = async () => {
+    try {
+      // Try to fetch a small amount of data from the API to check connection
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/ping`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Short timeout to quickly detect connection issues
+        timeout: 5000,
+      }).catch(() => null);
+      
+      if (!response) {
+        console.log('Network connection failed - no response');
+        setIsConnected(false);
+        showNetworkErrorAlert();
+        return;
+      }
+      
+      setIsConnected(true);
+    } catch (error) {
+      console.log('Network connection check error:', error);
+      setIsConnected(false);
+      showNetworkErrorAlert();
+    }
+  };
+
+  const showNetworkErrorAlert = () => {
+    Alert.alert(
+      'Network Connection Issue',
+      'Unable to connect to the server. Please check your internet connection and try again.',
+      [
+        {
+          text: 'Retry',
+          onPress: checkNetworkConnection
+        },
+        {
+          text: 'Continue Offline',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
 
   const loadUserData = async () => {
     try {
@@ -439,25 +487,47 @@ export default function HomeScreen() {
 
   const handleSearch = () => {
     if (!selectedVehicle) {
-      alert('Please select a vehicle type');
+      Alert.alert('Please select a vehicle type');
       return;
     }
     if (!location.trim()) {
-      alert('Please enter a location');
+      Alert.alert('Please enter a location');
       return;
     }
 
     // Validate date/time
     if (tripStart < new Date()) {
-      alert('Trip start time cannot be in the past');
+      Alert.alert('Trip start time cannot be in the past');
       return;
     }
 
     if (tripEnd <= tripStart) {
-      alert('Trip end time must be after start time');
+      Alert.alert('Trip end time must be after start time');
       return;
     }
 
+    // Check network connection before navigating
+    if (!isConnected) {
+      Alert.alert(
+        'Network Connection Issue',
+        'You appear to be offline. Some features may not work properly.',
+        [
+          {
+            text: 'Continue Anyway',
+            onPress: () => navigateToSelection()
+          },
+          {
+            text: 'Check Connection',
+            onPress: checkNetworkConnection
+          }
+        ]
+      );
+    } else {
+      navigateToSelection();
+    }
+  };
+
+  const navigateToSelection = () => {
     // Navigate to appropriate selection screen based on vehicle type
     if (selectedVehicle === 'car') {
       router.push({
@@ -595,6 +665,17 @@ export default function HomeScreen() {
       >
         <TouchableWithoutFeedback onPress={handleOutsidePress}>
           <SafeAreaView style={styles.container}>
+            {!isConnected && (
+              <View style={styles.offlineBanner}>
+                <Text style={styles.offlineBannerText}>
+                  You are currently offline. Some features may be limited.
+                </Text>
+                <TouchableOpacity onPress={checkNetworkConnection}>
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            
             <View style={styles.content}>
               {/* Header */}
               <HeaderWithProfile
@@ -1334,4 +1415,24 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#374151',
   },
+  offlineBanner: {
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    color: '#B91C1C',
+    fontSize: 12,
+    flex: 1,
+  },
+  retryText: {
+    color: '#B91C1C',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 8,
+    textDecorationLine: 'underline',
+  }
 });

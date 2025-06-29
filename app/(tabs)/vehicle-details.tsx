@@ -139,6 +139,8 @@ const VehicleDetailsScreen: React.FC = () => {
   const [userData, setUserData] = useState<any>(null);
   const [vehicleData, setVehicleData] = useState<VehicleDetails | null>(null);
   const [editedData, setEditedData] = useState<VehicleDetails | null>(null);
+  const [isConnected, setIsConnected] = useState(true);
+  const [apiRetries, setApiRetries] = useState(0);
 
   useEffect(() => {
     loadUserData();
@@ -213,8 +215,40 @@ const VehicleDetailsScreen: React.FC = () => {
     setLoading(false);
   };
 
+  const checkNetworkConnection = async () => {
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/ping`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 5000,
+      }).catch(() => null);
+      
+      if (!response) {
+        console.log('Network connection failed - no response');
+        setIsConnected(false);
+        return false;
+      }
+      
+      setIsConnected(true);
+      return true;
+    } catch (error) {
+      console.log('Network connection check error:', error);
+      setIsConnected(false);
+      return false;
+    }
+  };
+
   const fetchVehicleDetails = async () => {
     if (!vehicleId || !userData) {
+      return;
+    }
+
+    // Check network connection first
+    const isNetworkConnected = await checkNetworkConnection();
+    if (!isNetworkConnected && apiRetries >= 2) {
+      console.log('Network connection failed after retries, using mock data');
       return;
     }
 
@@ -227,6 +261,8 @@ const VehicleDetailsScreen: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        // Add a timeout to prevent hanging requests
+        timeout: 10000,
       });
 
       console.log('Vehicle details response status:', response.status);
@@ -239,13 +275,34 @@ const VehicleDetailsScreen: React.FC = () => {
         const transformedData = transformVehicleData(data);
         setVehicleData(transformedData);
         setEditedData(transformedData);
+        setIsConnected(true);
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('API Error Response:', errorData);
+        
+        // Increment retry counter
+        setApiRetries(prev => prev + 1);
+        
+        // If we've retried less than 3 times, try again after a delay
+        if (apiRetries < 2) {
+          setTimeout(() => {
+            fetchVehicleDetails();
+          }, 2000);
+        }
         // Don't set error here, we'll still show mock data
       }
     } catch (error) {
       console.error('Error fetching vehicle details:', error);
+      
+      // Increment retry counter
+      setApiRetries(prev => prev + 1);
+      
+      // If we've retried less than 3 times, try again after a delay
+      if (apiRetries < 2) {
+        setTimeout(() => {
+          fetchVehicleDetails();
+        }, 2000);
+      }
       // Don't set error here, we'll still show mock data
     } finally {
       setLoading(false);
@@ -324,6 +381,23 @@ const VehicleDetailsScreen: React.FC = () => {
     setLoading(true);
     
     try {
+      // Check network connection first
+      const isNetworkConnected = await checkNetworkConnection();
+      
+      if (!isNetworkConnected) {
+        Alert.alert(
+          'Network Connection Issue',
+          'Unable to connect to the server. Your changes will be saved locally but not synced with the server.',
+          [{ text: 'OK' }]
+        );
+        
+        // Update local state with edited data even if offline
+        setVehicleData(editedData);
+        setIsEditing(false);
+        setLoading(false);
+        return;
+      }
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -394,6 +468,19 @@ const VehicleDetailsScreen: React.FC = () => {
             try {
               setLoading(true);
               
+              // Check network connection first
+              const isNetworkConnected = await checkNetworkConnection();
+              
+              if (!isNetworkConnected) {
+                Alert.alert(
+                  'Network Connection Issue',
+                  'Unable to connect to the server. Please try again when you have internet connection.',
+                  [{ text: 'OK' }]
+                );
+                setLoading(false);
+                return;
+              }
+              
               // Simulate API call
               await new Promise(resolve => setTimeout(resolve, 1000));
               
@@ -445,6 +532,26 @@ const VehicleDetailsScreen: React.FC = () => {
     
     try {
       setLoading(true);
+      
+      // Check network connection first
+      const isNetworkConnected = await checkNetworkConnection();
+      
+      if (!isNetworkConnected) {
+        Alert.alert(
+          'Network Connection Issue',
+          'Unable to connect to the server. Your changes will be saved locally but not synced with the server.',
+          [{ text: 'OK' }]
+        );
+        
+        // Update local state even if offline
+        setVehicleData({
+          ...vehicleData,
+          status: newStatus,
+        });
+        
+        setLoading(false);
+        return;
+      }
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -646,6 +753,17 @@ const VehicleDetailsScreen: React.FC = () => {
   return (
     <ScreenWrapper>
       <SafeAreaView style={styles.container}>
+        {!isConnected && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineBannerText}>
+              You are currently offline. Some features may be limited.
+            </Text>
+            <TouchableOpacity onPress={checkNetworkConnection}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -1227,6 +1345,26 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 40,
   },
+  offlineBanner: {
+    backgroundColor: '#FEF2F2',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    color: '#B91C1C',
+    fontSize: 12,
+    flex: 1,
+  },
+  retryText: {
+    color: '#B91C1C',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 8,
+    textDecorationLine: 'underline',
+  }
 });
 
 export default VehicleDetailsScreen;
